@@ -1,4 +1,4 @@
-// Presets e configurações oficiais 2026 para a Precificadora 3D Ecom
+// Presets e configurações oficiais 2026 para a Plataforma3D
 export const PRINTER_PROFILES = [
   { id: 'bambu-a1-mini', name: 'Bambu Lab A1 Mini', watts: 80, kw: 0.08, category: 'bambu', desc: 'Leve e eficiente (~80W)' },
   { id: 'bambu-a1', name: 'Bambu Lab A1', watts: 110, kw: 0.11, category: 'bambu', desc: 'Média de 110W' },

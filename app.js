@@ -849,7 +849,7 @@ function copySummaryToClipboard() {
   }
 
   const summary = `
-📊 *PRECIFICAÇÃO 3D - 3DEcom*
+📊 *PRECIFICAÇÃO 3D - Plataforma3D*
 📦 *Produto:* ${state.productName}
 🏢 *Canal:* ${mp.name}
 ━━━━━━━━━━━━━━━━━━━━

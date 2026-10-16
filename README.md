@@ -1,4 +1,4 @@
-# ⚡ 3DEcom — Calculadora de Precificação para Impressão 3D (Taxas 2026)
+# ⚡ Plataforma3D — Calculadora de Precificação para Impressão 3D (Taxas 2026)
 
 Calculadora moderna, profissional e completa para precificação de peças impressas em 3D. Calcula custos reais de energia, filamento, depreciação, embalagem e aplica automaticamente as taxas reais de **Shopee (FGE / Padrão 2026)** e **Mercado Livre (Premium / Clássico 2026)** com lucro líquido real garantido.
 
