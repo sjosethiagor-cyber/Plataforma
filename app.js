@@ -5,23 +5,23 @@ import { GCodeParser } from './gcodeParser.js';
 // Inicialização da engine
 const engine = new PricingEngine();
 
-// Estado da aplicação
+// Estado da aplicação (Inicia ZERADO até o usuário subir um produto ou preencher os dados)
 const state = {
   marketplaceKey: 'ml_premium',
   calcMode: 'price', // 'price' ou 'margin'
-  productName: 'Suporte Articulado Gamer',
-  salePrice: 74.90,
+  productName: '',
+  salePrice: 0,
   targetMargin: 50.0,
-  weightGrams: 85,
+  weightGrams: 0,
   filamentType: 'pla',
   filamentPriceKg: 80.00,
   lossMarginPercent: 0,
-  printHours: 2,
-  printMinutes: 30,
+  printHours: 0,
+  printMinutes: 0,
   printerId: 'bambu-p1s',
   printerWatts: 120,
   costPerKwh: 0.85,
-  packagingCost: 2.38,
+  packagingCost: 0.00,
   machineHourCost: 0.00,
   extraInsumosCost: 0.00,
   taxPercent: 6.0,
@@ -31,6 +31,7 @@ const state = {
   dailyWorkingHours: 20,
   promoDiscountPercent: 10.0,
   customShipping: null,
+  fileUploaded: false,
 
   // Modo Lote / Atacado
   quantity: 1,
@@ -104,6 +105,8 @@ const elements = {
   batchTotalFilament: document.getElementById('batch-total-filament'),
 
   // Displays de Resultado Unitário
+  profitHeroCard: document.getElementById('profit-hero-card'),
+  calcEmptyNotice: document.getElementById('calc-empty-state-notice'),
   netProfitBig: document.getElementById('net-profit-big'),
   netMarginBig: document.getElementById('net-margin-big'),
   marginBadge: document.getElementById('margin-badge'),
@@ -156,6 +159,7 @@ const elements = {
   mobileBtnSave: document.getElementById('mobile-btn-save'),
 
   // Modals & Buttons
+  resetCalcBtn: document.getElementById('btn-reset-calc'),
   saveCalcBtn: document.getElementById('btn-save-calc'),
   copySummaryBtn: document.getElementById('btn-copy-summary'),
   historyBtn: document.getElementById('btn-history'),
@@ -262,8 +266,32 @@ function syncStateFromInputs() {
 }
 
 // Renderiza o gráfico Donut Chart interativo
-function renderDonutChart(result, effectivePrice) {
+function renderDonutChart(result, effectivePrice, isActive = true) {
   if (!elements.donutSvg) return;
+
+  if (!isActive || !result) {
+    const cx = 100, cy = 100, R = 80, r = 52;
+    elements.donutSvg.innerHTML = `
+      <circle cx="${cx}" cy="${cy}" r="${(R + r) / 2}" 
+        fill="none" stroke="rgba(255, 255, 255, 0.08)" stroke-width="${R - r}" stroke-dasharray="4 4">
+      </circle>
+    `;
+    if (elements.donutCenterVal) {
+      elements.donutCenterVal.textContent = '0%';
+      elements.donutCenterVal.style.color = 'var(--text-muted)';
+    }
+    if (elements.donutCenterLbl) {
+      elements.donutCenterLbl.textContent = 'Aguardando Peça';
+    }
+    if (elements.donutLegend) {
+      elements.donutLegend.innerHTML = `
+        <div class="donut-legend-item" style="color: var(--text-dim); opacity: 0.7; font-size: 11px; padding: 4px 0;">
+          <span>📦 Suba o arquivo fatiado para ver a composição</span>
+        </div>
+      `;
+    }
+    return;
+  }
 
   const rawProfit = result.netProfit;
   const isLoss = rawProfit < 0;
@@ -392,10 +420,93 @@ function renderDonutChart(result, effectivePrice) {
   });
 }
 
+// Verifica se há produto ativo (arquivo subido ou peso/tempo informados)
+function hasActiveProduct(s) {
+  if (s.fileUploaded) return true;
+  const hasSpecs = (s.weightGrams > 0) || (s.printHours > 0 || s.printMinutes > 0);
+  if (!hasSpecs) return false;
+  return s.calcMode === 'margin' ? (s.targetMargin > 0) : (s.salePrice > 0);
+}
+
 // Renderiza os cálculos e atualiza a interface
 function updateCalculations() {
   syncStateFromInputs();
+  const isActive = hasActiveProduct(state);
 
+  // Alterna banner de aviso e estilo do hero card
+  if (elements.calcEmptyNotice) {
+    elements.calcEmptyNotice.style.display = isActive ? 'none' : 'flex';
+  }
+  if (elements.profitHeroCard) {
+    if (isActive) elements.profitHeroCard.classList.remove('is-zeroed');
+    else elements.profitHeroCard.classList.add('is-zeroed');
+  }
+
+  if (!isActive) {
+    // 1. Zera Card Principal de Lucro Líquido
+    elements.netProfitBig.textContent = 'R$ 0,00';
+    elements.netProfitBig.style.color = 'var(--text-muted)';
+    elements.netMarginBig.textContent = '0,0%';
+    elements.netMarginBig.style.color = 'var(--text-muted)';
+
+    elements.marginBadge.textContent = 'Aguardando Peça';
+    elements.marginBadge.style.color = 'var(--text-dim)';
+    elements.marginBadge.style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
+
+    elements.profitPerHourDisp.textContent = 'R$ 0,00/hora';
+    elements.dailyPotentialDisp.textContent = `R$ 0,00/dia (${state.dailyWorkingHours}h)`;
+
+    // 2. Oculta Lote
+    if (elements.batchActiveBadge) elements.batchActiveBadge.style.display = 'none';
+    if (elements.batchResultCard) elements.batchResultCard.style.display = 'none';
+
+    // 3. Gráfico Donut zerado
+    renderDonutChart(null, 0, false);
+
+    // 4. Cascata zerada
+    elements.cascadeBasePrice.textContent = 'R$ 0,00';
+    elements.cascadeMpLabel.textContent = '└─ Taxa Marketplace';
+    elements.cascadeMpValue.textContent = '− R$ 0,00';
+    if (elements.cascadeShippingBox) elements.cascadeShippingBox.style.display = 'none';
+    elements.cascadeTaxLabel.textContent = `└─ Imposto (${state.taxPercent}%)`;
+    elements.cascadeTaxValue.textContent = '− R$ 0,00';
+    elements.cascadeElectricityLabel.textContent = '└─ Energia elétrica';
+    elements.cascadeElectricityValue.textContent = '− R$ 0,00';
+    elements.cascadeFilamentLabel.textContent = '└─ Filamento';
+    elements.cascadeFilamentValue.textContent = '− R$ 0,00';
+    elements.cascadePackagingLabel.textContent = '└─ Embalagem & Outros';
+    elements.cascadePackagingValue.textContent = '− R$ 0,00';
+    elements.cascadeNetProfit.textContent = 'R$ 0,00';
+    elements.cascadeNetProfit.style.color = 'var(--text-muted)';
+
+    // 5. Promoção zerada
+    elements.promoAnnouncedPrice.textContent = 'R$ 0,00';
+    elements.promoCustomerPays.textContent = 'R$ 0,00';
+    elements.promoTagline.textContent = '💜 Aguardando dados da peça para calcular promoção';
+
+    // 6. Capacidade zerada
+    elements.capProfitHour.textContent = 'R$ 0,00';
+    elements.capPiecesDay.textContent = '0 peças';
+    elements.capMonthlyProfit.textContent = 'R$ 0,00';
+
+    // 7. Matriz Multicanal zerada
+    renderMultiChannelMatrix(0, false);
+
+    // 8. Barra Mobile zerada
+    if (elements.mobileStickyBar) {
+      if (elements.mobileProfitVal) {
+        elements.mobileProfitVal.textContent = 'R$ 0,00';
+        elements.mobileProfitVal.style.color = 'var(--text-muted)';
+      }
+      if (elements.mobileMarginBadge) {
+        elements.mobileMarginBadge.textContent = '0,0%';
+        elements.mobileMarginBadge.style.color = 'var(--text-muted)';
+      }
+    }
+    return;
+  }
+
+  // --- CÁLCULO ATIVO QUANDO HÁ PRODUTO ---
   let effectivePrice = state.salePrice;
 
   if (state.calcMode === 'margin') {
@@ -463,7 +574,7 @@ function updateCalculations() {
   }
 
   // 3. Atualiza Gráfico Donut SVG
-  renderDonutChart(result, effectivePrice);
+  renderDonutChart(result, effectivePrice, true);
 
   // 4. Atualiza a Cascata Linha por Linha
   elements.cascadeBasePrice.textContent = engine.formatCurrency(effectivePrice);
@@ -495,6 +606,7 @@ function updateCalculations() {
   elements.cascadePackagingValue.textContent = `− ${engine.formatCurrency(totalPackagingAndInsumos)}`;
 
   elements.cascadeNetProfit.textContent = engine.formatCurrency(result.netProfit);
+  elements.cascadeNetProfit.style.color = result.netProfit >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
 
   // 5. Atualiza Promoção com Lucro Preservado
   const promo = engine.calculatePromotion(effectivePrice, state.promoDiscountPercent);
@@ -509,7 +621,7 @@ function updateCalculations() {
   elements.capMonthlyProfit.textContent = engine.formatCurrency(capacity.monthlyProfit);
 
   // 7. Comparativo Multicanal Simultâneo
-  renderMultiChannelMatrix(effectivePrice);
+  renderMultiChannelMatrix(effectivePrice, true);
 
   // 8. Barra Flutuante Mobile
   if (elements.mobileStickyBar) {
@@ -532,7 +644,7 @@ function updateCalculations() {
 }
 
 // Renderiza a matriz comparativa de marketplaces
-function renderMultiChannelMatrix(currentPrice) {
+function renderMultiChannelMatrix(currentPrice, isActive = true) {
   const channels = [
     { key: 'ml_premium', name: 'Mercado Livre Premium', icon: '🟡' },
     { key: 'ml_classico', name: 'Mercado Livre Clássico', icon: '🟡' },
@@ -540,6 +652,32 @@ function renderMultiChannelMatrix(currentPrice) {
     { key: 'shopee_padrao', name: 'Shopee Padrão', icon: '🟠' },
     { key: 'venda_direta', name: 'Venda Direta (Pix)', icon: '🟢' }
   ];
+
+  if (!isActive) {
+    elements.matrixBody.innerHTML = channels.map(ch => {
+      const isCurrent = state.marketplaceKey === ch.key;
+      return `
+        <tr style="${isCurrent ? 'background: rgba(255,255,255,0.03);' : ''}">
+          <td>
+            <span class="channel-name">
+              <span>${ch.icon}</span> ${ch.name}
+              ${isCurrent ? '<span style="color:var(--text-dim); font-size:10px; margin-left:6px;">(Ativo)</span>' : ''}
+            </span>
+          </td>
+          <td class="mono" style="color: var(--text-dim);">R$ 0,00</td>
+          <td class="mono" style="color: var(--text-dim);">− R$ 0,00</td>
+          <td class="mono" style="color: var(--text-dim);">R$ 0,00</td>
+          <td>
+            <span style="color: var(--text-dim);" class="mono">0,0%</span>
+          </td>
+          <td>
+            <span style="font-size: 11px; color: var(--text-dim);">Aguardando</span>
+          </td>
+        </tr>
+      `;
+    }).join('');
+    return;
+  }
 
   elements.matrixBody.innerHTML = channels.map(ch => {
     const calcCopy = { ...state, marketplaceKey: ch.key };
@@ -697,6 +835,19 @@ async function handleGCodeFile(file) {
         }
       }
 
+      state.fileUploaded = true;
+
+      // Se o preço de venda estiver vazio ou 0, sugere automaticamente um preço com 50% de margem
+      const currentPriceVal = parseFloat(elements.salePriceInput.value) || 0;
+      if (currentPriceVal === 0 && state.calcMode === 'price') {
+        const suggested = engine.findPriceForTargetMargin(50, state);
+        if (suggested > 0) {
+          const rounded = Math.max(15, Math.ceil(suggested - 0.10) - 0.10);
+          elements.salePriceInput.value = rounded.toFixed(2);
+          state.salePrice = rounded;
+        }
+      }
+
       updateCalculations();
       
       if (meta.isModelOnly) {
@@ -713,9 +864,37 @@ async function handleGCodeFile(file) {
   }
 }
 
+// Zera a ferramenta e limpa todos os dados para uma nova peça
+function resetCalculation() {
+  state.fileUploaded = false;
+  state.productName = '';
+  state.salePrice = 0;
+  state.weightGrams = 0;
+  state.printHours = 0;
+  state.printMinutes = 0;
+  state.customShipping = null;
+
+  elements.productNameInput.value = '';
+  elements.salePriceInput.value = '';
+  elements.hoursInput.value = '';
+  elements.minutesInput.value = '';
+  elements.weightInput.value = '';
+  if (elements.gcodeFileInput) elements.gcodeFileInput.value = '';
+
+  if (elements.dropzoneStatus) elements.dropzoneStatus.style.display = 'none';
+  if (elements.dropzoneTip) elements.dropzoneTip.style.display = 'none';
+
+  updateCalculations();
+  showToast('Calculadora zerada! Pronta para nova peça.', '🔄');
+}
+
 // Histórico de Peças Salvas
 function saveCalculation() {
   syncStateFromInputs();
+  if (!hasActiveProduct(state)) {
+    showToast('Suba um arquivo ou preencha os dados da peça antes de salvar.', '⚠️');
+    return;
+  }
   const result = engine.computeCostsForPrice(state.salePrice, state);
 
   const item = {
@@ -831,6 +1010,10 @@ function deleteCalculation(id) {
 // Copiar resumo formatado para o WhatsApp
 function copySummaryToClipboard() {
   syncStateFromInputs();
+  if (!hasActiveProduct(state)) {
+    showToast('Suba um arquivo ou preencha os dados da peça antes de copiar o resumo.', '⚠️');
+    return;
+  }
   const r = engine.computeCostsForPrice(state.salePrice, state);
   const promo = engine.calculatePromotion(state.salePrice, state.promoDiscountPercent);
   const mp = MARKETPLACE_CONFIG[state.marketplaceKey];
@@ -1077,6 +1260,11 @@ function setupEventListeners() {
     input.addEventListener('input', () => updateCalculations());
     input.addEventListener('change', () => updateCalculations());
   });
+
+  // Botão Zerar / Nova Peça
+  if (elements.resetCalcBtn) {
+    elements.resetCalcBtn.addEventListener('click', resetCalculation);
+  }
 
   // Modal de Histórico
   elements.saveCalcBtn.addEventListener('click', saveCalculation);

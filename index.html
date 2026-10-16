@@ -25,6 +25,9 @@
       <span class="brand-badge">precificadora automática</span>
     </div>
     <div class="nav-actions">
+      <button id="btn-reset-calc" class="btn-ghost" title="Zerar valores e iniciar nova precificação">
+        <span>🔄</span> Nova Peça
+      </button>
       <button id="btn-history" class="btn-ghost" title="Histórico de Cálculos">
         <span>🕒</span> Histórico
       </button>
@@ -183,7 +186,7 @@
               </label>
               <div class="input-wrapper">
                 <span class="input-prefix">R$</span>
-                <input type="number" id="sale-price-input" class="form-input has-prefix" step="0.10" min="1" value="74.90">
+                <input type="number" id="sale-price-input" class="form-input has-prefix" step="0.10" min="0" value="" placeholder="0,00">
               </div>
               <div class="quick-pills">
                 <span style="font-size: 10px; color: var(--text-dim); margin-right: 4px; align-self: center;">Sugestões:</span>
@@ -260,7 +263,7 @@
                 <span>Nome ou Referência da Peça</span>
                 <span class="label-hint">Para identificação</span>
               </label>
-              <input type="text" id="product-name-input" class="form-input" value="Suporte Articulado Gamer" placeholder="Ex: Vaso Geométrico, Chaveiro, etc.">
+              <input type="text" id="product-name-input" class="form-input" value="" placeholder="Ex: Vaso Geométrico, Chaveiro, etc.">
             </div>
 
             <!-- Impressora -->
@@ -289,7 +292,7 @@
                 <span>Tempo (Horas)</span>
               </label>
               <div class="input-wrapper">
-                <input type="number" id="hours-input" class="form-input has-suffix" min="0" max="200" value="2">
+                <input type="number" id="hours-input" class="form-input has-suffix" min="0" max="200" value="" placeholder="0">
                 <span class="input-suffix">h</span>
               </div>
             </div>
@@ -299,7 +302,7 @@
                 <span>Tempo (Minutos)</span>
               </label>
               <div class="input-wrapper">
-                <input type="number" id="minutes-input" class="form-input has-suffix" min="0" max="59" value="30">
+                <input type="number" id="minutes-input" class="form-input has-suffix" min="0" max="59" value="" placeholder="0">
                 <span class="input-suffix">min</span>
               </div>
             </div>
@@ -330,7 +333,7 @@
                 <span class="label-hint">Do fatiador</span>
               </label>
               <div class="input-wrapper">
-                <input type="number" id="weight-input" class="form-input has-suffix" min="1" max="10000" value="85">
+                <input type="number" id="weight-input" class="form-input has-suffix" min="0" max="10000" value="" placeholder="0">
                 <span class="input-suffix">g</span>
               </div>
             </div>
@@ -505,16 +508,16 @@
             <div class="promo-highlight-box">
               <div>
                 <div class="promo-val-title">Anunciar por (Preço De)</div>
-                <div id="promo-announced-price" class="promo-val-num">R$ 83,22</div>
+                <div id="promo-announced-price" class="promo-val-num">R$ 0,00</div>
               </div>
               <div style="text-align: right;">
                 <div class="promo-val-title">Cliente Paga (Preço Por)</div>
-                <div id="promo-customer-pays" class="promo-val-num" style="color: #fff;">R$ 74,90</div>
+                <div id="promo-customer-pays" class="promo-val-num" style="color: #fff;">R$ 0,00</div>
               </div>
             </div>
 
             <div id="promo-tagline" class="promo-tagline">
-              💜 10% de desconto · Lucro de R$ 39,65 100% intacto
+              💜 Aguardando dados da peça para calcular promoção
             </div>
           </div>
         </div>
@@ -525,6 +528,15 @@
       <div class="calculator-results">
         <div class="result-sticky-wrapper">
           
+          <!-- Empty State Notice (Visível enquanto zerado) -->
+          <div id="calc-empty-state-notice" class="calc-empty-state-notice">
+            <span class="empty-sparkle">✨</span>
+            <div class="empty-notice-text">
+              <strong>Calculadora zerada — aguardando produto</strong>
+              <span>Suba seu arquivo fatiado (.gcode / .3mf / .stl) ou preencha o peso e tempo ao lado para calcular.</span>
+            </div>
+          </div>
+
           <!-- Batch Hero Card (Visível quando Quantidade > 1) -->
           <div id="batch-result-card" class="batch-result-card" style="display: none;">
             <div class="batch-result-header">
@@ -555,27 +567,27 @@
           </div>
 
           <!-- Profit Hero Card -->
-          <div class="profit-hero-card">
+          <div class="profit-hero-card is-zeroed" id="profit-hero-card">
             <div class="profit-header">
               <div class="profit-label">
                 <span>↑</span>
                 <span>LUCRO LÍQUIDO REAL</span>
               </div>
-              <span id="margin-badge" class="profit-badge" style="color: var(--accent-green); background: var(--accent-green-bg);">
-                Excelente
+              <span id="margin-badge" class="profit-badge" style="color: var(--text-dim); background: rgba(255, 255, 255, 0.06);">
+                Aguardando Peça
               </span>
             </div>
 
             <div class="profit-main-row">
-              <div id="net-profit-big" class="profit-big-number">R$ 39,65</div>
+              <div id="net-profit-big" class="profit-big-number">R$ 0,00</div>
               <div class="profit-margin-group">
-                <span id="net-margin-big" class="profit-margin-percent">52,9%</span>
+                <span id="net-margin-big" class="profit-margin-percent">0,0%</span>
               </div>
             </div>
 
             <div class="profit-footer-metrics">
-              <div><strong id="profit-per-hour">R$ 15,86</strong> /hora de máquina</div>
-              <div><strong id="daily-potential">R$ 317,20</strong> /dia (20h)</div>
+              <div><strong id="profit-per-hour">R$ 0,00</strong> /hora de máquina</div>
+              <div><strong id="daily-potential">R$ 0,00</strong> /dia (20h)</div>
             </div>
           </div>
 
@@ -607,7 +619,7 @@
               <span class="cascade-base-label">
                 <span>🏷️</span> Preço de venda
               </span>
-              <span id="cascade-base-price" class="cascade-base-value">R$ 74,90</span>
+              <span id="cascade-base-price" class="cascade-base-value">R$ 0,00</span>
             </div>
 
             <!-- Branch 1: Marketplace fee -->
@@ -619,14 +631,14 @@
               <div class="branch-card">
                 <span class="branch-label">
                   <span class="dot-indicator" style="background: var(--accent-orange);"></span>
-                  <span id="cascade-mp-label">└─ Taxa ML Premium (19%)</span>
+                  <span id="cascade-mp-label">└─ Taxa Marketplace</span>
                 </span>
-                <span id="cascade-mp-value" class="branch-value">− R$ 14,23</span>
+                <span id="cascade-mp-value" class="branch-value">− R$ 0,00</span>
               </div>
             </div>
 
             <!-- Branch 2: Shipping / Fixed Fee -->
-            <div class="cascade-branch" id="cascade-shipping-box">
+            <div class="cascade-branch" id="cascade-shipping-box" style="display: none;">
               <div class="branch-line-box">
                 <div class="branch-v-line"></div>
                 <div class="branch-corner"></div>
@@ -634,9 +646,9 @@
               <div class="branch-card">
                 <span class="branch-label">
                   <span class="dot-indicator" style="background: var(--accent-purple);"></span>
-                  <span id="cascade-shipping-label">└─ Frete (0,5kg)</span>
+                  <span id="cascade-shipping-label">└─ Frete / Custo Fixo</span>
                 </span>
-                <span id="cascade-shipping-value" class="branch-value">− R$ 6,50</span>
+                <span id="cascade-shipping-value" class="branch-value">− R$ 0,00</span>
               </div>
             </div>
 
@@ -651,7 +663,7 @@
                   <span class="dot-indicator" style="background: var(--accent-red);"></span>
                   <span id="cascade-tax-label">└─ Imposto (6%)</span>
                 </span>
-                <span id="cascade-tax-value" class="branch-value">− R$ 4,49</span>
+                <span id="cascade-tax-value" class="branch-value">− R$ 0,00</span>
               </div>
             </div>
 
@@ -666,7 +678,7 @@
                   <span class="dot-indicator" style="background: var(--accent-blue);"></span>
                   <span id="cascade-electricity-label">└─ Energia elétrica</span>
                 </span>
-                <span id="cascade-electricity-value" class="branch-value">− R$ 0,85</span>
+                <span id="cascade-electricity-value" class="branch-value">− R$ 0,00</span>
               </div>
             </div>
 
@@ -679,9 +691,9 @@
               <div class="branch-card">
                 <span class="branch-label">
                   <span class="dot-indicator" style="background: #ec4899;"></span>
-                  <span id="cascade-filament-label">└─ Filamento (85g)</span>
+                  <span id="cascade-filament-label">└─ Filamento</span>
                 </span>
-                <span id="cascade-filament-value" class="branch-value">− R$ 6,80</span>
+                <span id="cascade-filament-value" class="branch-value">− R$ 0,00</span>
               </div>
             </div>
 
@@ -696,7 +708,7 @@
                   <span class="dot-indicator" style="background: #a855f7;"></span>
                   <span id="cascade-packaging-label">└─ Embalagem</span>
                 </span>
-                <span id="cascade-packaging-value" class="branch-value">− R$ 2,38</span>
+                <span id="cascade-packaging-value" class="branch-value">− R$ 0,00</span>
               </div>
             </div>
 
@@ -705,7 +717,7 @@
               <span class="label">
                 <span>✅</span> Lucro líquido final
               </span>
-              <span id="cascade-net-profit" class="val">R$ 39,65</span>
+              <span id="cascade-net-profit" class="val">R$ 0,00</span>
             </div>
           </div>
 
@@ -720,15 +732,15 @@
 
             <div class="capacity-metrics-grid">
               <div class="capacity-metric-box">
-                <div id="cap-profit-hour" class="capacity-metric-val">R$ 15,86</div>
+                <div id="cap-profit-hour" class="capacity-metric-val">R$ 0,00</div>
                 <div class="capacity-metric-label">Lucro / Hora</div>
               </div>
               <div class="capacity-metric-box">
-                <div id="cap-pieces-day" class="capacity-metric-val">8 peças</div>
+                <div id="cap-pieces-day" class="capacity-metric-val">0 peças</div>
                 <div class="capacity-metric-label">Produção / Dia</div>
               </div>
               <div class="capacity-metric-box">
-                <div id="cap-monthly-profit" class="capacity-metric-val">R$ 9.516</div>
+                <div id="cap-monthly-profit" class="capacity-metric-val">R$ 0,00</div>
                 <div class="capacity-metric-label">Potencial Mensal</div>
               </div>
             </div>
@@ -844,8 +856,8 @@
         <span id="mobile-channel-tag">ML Premium</span>
       </div>
       <div class="mobile-bar-numbers">
-        <span id="mobile-profit-val" class="mobile-profit-val">R$ 39,65</span>
-        <span id="mobile-margin-badge" class="mobile-margin-badge">52,9%</span>
+        <span id="mobile-profit-val" class="mobile-profit-val">R$ 0,00</span>
+        <span id="mobile-margin-badge" class="mobile-margin-badge">0,0%</span>
       </div>
     </div>
     <div class="mobile-bar-actions">
