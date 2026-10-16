@@ -201,6 +201,127 @@ export class PricingEngine {
   }
 
   /**
+   * Arredonda para preço comercial atraente (.90) garantindo a margem
+   */
+  roundCommercialPrice(val) {
+    if (!val || val <= 0) return 0;
+    const floorVal = Math.floor(val);
+    const cand = floorVal + 0.90;
+    return cand >= val ? cand : floorVal + 1.90;
+  }
+
+  /**
+   * Calcula o detalhamento da Equação de Custo de Produção (Unitário e Multiplicado por Kit)
+   */
+  computeProductionEquation(inputs, quantity = 1, batchPackaging = 'single') {
+    const q = Math.max(1, parseInt(quantity, 10) || 1);
+    const weight = Number(inputs.weightGrams) || 0;
+    const filamentPriceKg = Number(inputs.filamentPriceKg) || 80;
+    const lossMultiplier = 1 + ((Number(inputs.lossMarginPercent) || 0) / 100);
+
+    const unitHours = Math.max(0, (Number(inputs.printHours) || 0) + (Number(inputs.printMinutes) || 0) / 60);
+    const printerWatts = Number(inputs.printerWatts) || 120;
+    const costPerKwh = Number(inputs.costPerKwh) || 0.85;
+
+    // Custos Unitários
+    const unitFilamentCost = (weight / 1000) * filamentPriceKg * lossMultiplier;
+    const unitElectricityCost = (printerWatts / 1000) * unitHours * costPerKwh;
+    const unitPackagingCost = Number(inputs.packagingCost) || 0;
+    const unitInsumosCost = Number(inputs.extraInsumosCost) || 0;
+    const unitDepreciationCost = unitHours * (Number(inputs.machineHourCost) || 0);
+    const unitProductionCost = unitFilamentCost + unitElectricityCost + unitPackagingCost + unitInsumosCost + unitDepreciationCost;
+
+    // Multiplicação da Equação para o Kit
+    const totalWeightGrams = weight * q;
+    const totalPrintHours = unitHours * q;
+    const totalFilamentCost = unitFilamentCost * q;
+    const totalElectricityCost = unitElectricityCost * q;
+    const totalInsumosCost = unitInsumosCost * q;
+    const totalDepreciationCost = unitDepreciationCost * q;
+
+    // Embalagem do kit: se caixa única, cobra uma embalagem com leve margem para volume; se individual, cobra N vezes
+    const effectivePackagingCost = batchPackaging === 'single'
+      ? (q === 1 ? unitPackagingCost : Math.round((unitPackagingCost * 1.35) * 100) / 100)
+      : unitPackagingCost * q;
+
+    const totalProductionCost = totalFilamentCost + totalElectricityCost + effectivePackagingCost + totalInsumosCost + totalDepreciationCost;
+
+    return {
+      quantity: q,
+      unitWeightGrams: weight,
+      totalWeightGrams,
+      unitPrintHours: unitHours,
+      totalPrintHours,
+      unitFilamentCost,
+      totalFilamentCost,
+      unitElectricityCost,
+      totalElectricityCost,
+      unitPackagingCost,
+      effectivePackagingCost,
+      unitInsumosCost,
+      totalInsumosCost,
+      unitDepreciationCost,
+      totalDepreciationCost,
+      unitProductionCost,
+      totalProductionCost
+    };
+  }
+
+  /**
+   * Calcula as duas recomendações de preço ("Bom Preço" e "Preço Ideal") para venda na internet
+   */
+  computeSmartRecommendations(inputs, quantity = 1, batchPackaging = 'single') {
+    const q = Math.max(1, parseInt(quantity, 10) || 1);
+    const prod = this.computeProductionEquation(inputs, q, batchPackaging);
+
+    if (prod.totalWeightGrams <= 0 && prod.totalPrintHours <= 0) {
+      return {
+        production: prod,
+        goodPrice: { price: 0, netProfit: 0, netMarginPercent: 0, unitProfit: 0, targetMargin: 38 },
+        idealPrice: { price: 0, netProfit: 0, netMarginPercent: 0, unitProfit: 0, targetMargin: 52 }
+      };
+    }
+
+    const kitInputs = {
+      ...inputs,
+      weightGrams: prod.totalWeightGrams,
+      printHours: Math.floor(prod.totalPrintHours),
+      printMinutes: Math.round((prod.totalPrintHours % 1) * 60),
+      packagingCost: prod.effectivePackagingCost,
+      extraInsumosCost: prod.totalInsumosCost,
+      machineHourCost: inputs.machineHourCost
+    };
+
+    // 1. Bom Preço para Internet (Giro Rápido / Competitivo): ~38% de margem líquida
+    const rawGood = this.findPriceForTargetMargin(38, kitInputs);
+    const goodPrice = this.roundCommercialPrice(rawGood);
+    const resultGood = this.computeCostsForPrice(goodPrice, kitInputs);
+
+    // 2. Preço Ideal (Margem Máxima Recomendada 3D): ~52% de margem líquida
+    const rawIdeal = this.findPriceForTargetMargin(52, kitInputs);
+    const idealPrice = this.roundCommercialPrice(rawIdeal);
+    const resultIdeal = this.computeCostsForPrice(idealPrice, kitInputs);
+
+    return {
+      production: prod,
+      goodPrice: {
+        price: goodPrice,
+        netProfit: resultGood.netProfit,
+        netMarginPercent: resultGood.netMarginPercent,
+        unitProfit: resultGood.netProfit / q,
+        targetMargin: 38
+      },
+      idealPrice: {
+        price: idealPrice,
+        netProfit: resultIdeal.netProfit,
+        netMarginPercent: resultIdeal.netMarginPercent,
+        unitProfit: resultIdeal.netProfit / q,
+        targetMargin: 52
+      }
+    };
+  }
+
+  /**
    * Cálculo de Promoção com Lucro Preservado
    * Preço a anunciar = Preço normal / (1 - desconto)
    */

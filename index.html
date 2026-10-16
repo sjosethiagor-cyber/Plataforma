@@ -60,168 +60,11 @@
       <!-- ================= LEFT COLUMN: INPUTS & SETTINGS ================= -->
       <div class="calculator-inputs">
         
-        <!-- CARD 1: MARKETPLACE -->
-        <div class="card">
+        <!-- ================= PASSO 1: DADOS DA PEÇA & FORMAÇÃO DE KIT ================= -->
+        <div class="card card-production-step" id="card-step-production">
           <div class="card-header">
             <div class="card-title-group">
-              <span class="step-badge">1 · CANAL DE VENDA</span>
-            </div>
-          </div>
-
-          <div class="marketplace-tabs">
-            <div class="mp-tab active" data-mp="ml_premium" id="tab-ml">
-              <div class="mp-tab-icon-wrap ml-icon-wrap">
-                <svg class="mp-tab-svg" viewBox="0 0 24 24" fill="none">
-                  <rect width="24" height="24" rx="6" fill="#FFE600"/>
-                  <path d="M5.5 13.5L9 16.5L13.5 11.5L18.5 15" stroke="#2D3277" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M9.5 11.5L12 9.5L15 12" stroke="#2D3277" stroke-width="1.8" stroke-linecap="round"/>
-                </svg>
-              </div>
-              <div class="mp-tab-text">
-                <span class="mp-tab-title">Mercado Livre</span>
-                <span class="mp-tab-sub">Premium / Clássico</span>
-              </div>
-            </div>
-            <div class="mp-tab" data-mp="shopee_fge" id="tab-shopee">
-              <div class="mp-tab-icon-wrap shopee-icon-wrap">
-                <svg class="mp-tab-svg" viewBox="0 0 24 24" fill="none">
-                  <rect width="24" height="24" rx="6" fill="#EE4D2D"/>
-                  <path d="M8.5 7.5C8.5 5.57 10.07 4 12 4C13.93 4 15.5 5.57 15.5 7.5V8.5H8.5V7.5Z" stroke="white" stroke-width="1.8"/>
-                  <path d="M5.5 8.5H18.5L17.5 19.5H6.5L5.5 8.5Z" fill="#EE4D2D" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
-                  <path d="M13.2 12C13.2 11.4 12.7 11 11.9 11C11.1 11 10.7 11.4 10.7 12C10.7 13 13.3 12.8 13.3 14.3C13.3 15.1 12.6 15.7 11.8 15.7C10.8 15.7 10.3 15 10.3 14.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-                </svg>
-              </div>
-              <div class="mp-tab-text">
-                <span class="mp-tab-title">Shopee</span>
-                <span class="mp-tab-sub">FGE 2026 / Padrão</span>
-              </div>
-            </div>
-            <div class="mp-tab" data-mp="venda_direta" id="tab-direta">
-              <div class="mp-tab-icon-wrap direta-icon-wrap">
-                <svg class="mp-tab-svg" viewBox="0 0 24 24" fill="none">
-                  <rect width="24" height="24" rx="6" fill="#00E5A0" fill-opacity="0.2"/>
-                  <path d="M8.5 7.5L12 4L15.5 7.5L12 11L8.5 7.5ZM8.5 16.5L12 13L15.5 16.5L12 20L8.5 16.5ZM4.5 12L8 8.5L11.5 12L8 15.5L4.5 12ZM12.5 12L16 8.5L19.5 12L16 15.5L12.5 12Z" fill="#00E5A0"/>
-                </svg>
-              </div>
-              <div class="mp-tab-text">
-                <span class="mp-tab-title">Venda Direta</span>
-                <span class="mp-tab-sub">Pix / Cartão / Zap</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Sub-options ML -->
-          <div id="ml-sub-options" class="mp-sub-options">
-            <span style="font-weight: 700; color: #fff;">Tipo de anúncio ML:</span>
-            <div class="radio-group">
-              <label class="radio-label">
-                <input type="radio" name="ml-tier" value="ml_premium" checked>
-                <span>Premium (19% + Fixo/Frete)</span>
-              </label>
-              <label class="radio-label">
-                <input type="radio" name="ml-tier" value="ml_classico">
-                <span>Clássico (14% + Fixo/Frete)</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Sub-options Shopee -->
-          <div id="shopee-sub-options" class="mp-sub-options" style="display: none;">
-            <div class="radio-group">
-              <label class="radio-label">
-                <input type="radio" name="shopee-tier" value="shopee_fge" checked>
-                <span>Frete Grátis Extra (20% + R$ 4,00)</span>
-              </label>
-              <label class="radio-label">
-                <input type="radio" name="shopee-tier" value="shopee_padrao">
-                <span>Padrão (14% + R$ 4,00)</span>
-              </label>
-            </div>
-            <label class="checkbox-label" style="border-left: 1px solid var(--border-light); padding-left: 10px;">
-              <input type="checkbox" id="shopee-cpf-checkbox">
-              <span>Vendedor CPF (+R$ 5,00 taxa extra)</span>
-            </label>
-          </div>
-
-          <!-- Sub-options Venda Direta -->
-          <div id="direta-sub-options" class="mp-sub-options" style="display: none;">
-            <span style="font-weight: 700; color: #fff;">Forma de Recebimento:</span>
-            <div class="radio-group">
-              <label class="radio-label">
-                <input type="radio" name="direta-tier" value="pix" checked>
-                <span>Pix / Dinheiro (0% taxa)</span>
-              </label>
-              <label class="radio-label">
-                <input type="radio" name="direta-tier" value="card">
-                <span>Cartão de Crédito à Vista (3,5% taxa)</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 2: PREÇO OU MARGEM DESEJADA -->
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title-group">
-              <span class="step-badge">2 · OBJETIVO FINANCEIRO</span>
-            </div>
-          </div>
-
-          <!-- Mode switcher -->
-          <div class="mode-toggle-container">
-            <button type="button" id="mode-price-btn" class="mode-btn active">
-              Calcular por Preço de Venda
-            </button>
-            <button type="button" id="mode-margin-btn" class="mode-btn">
-              🎯 Precificar por Margem Desejada
-            </button>
-          </div>
-
-          <!-- Input Preço de Venda -->
-          <div id="price-input-group">
-            <div class="form-group">
-              <label class="form-label" for="sale-price-input">
-                <span>Preço de Venda Pretendido</span>
-                <span class="label-hint">Valor final ao consumidor</span>
-              </label>
-              <div class="input-wrapper">
-                <span class="input-prefix">R$</span>
-                <input type="number" id="sale-price-input" class="form-input has-prefix" step="0.10" min="0" value="" placeholder="0,00">
-              </div>
-              <div class="quick-pills">
-                <span style="font-size: 10px; color: var(--text-dim); margin-right: 4px; align-self: center;">Sugestões:</span>
-                <button type="button" class="quick-pill" data-price="29.90">R$ 29,90</button>
-                <button type="button" class="quick-pill" data-price="49.90">R$ 49,90</button>
-                <button type="button" class="quick-pill" data-price="74.90">R$ 74,90</button>
-                <button type="button" class="quick-pill" data-price="99.90">R$ 99,90</button>
-                <button type="button" class="quick-pill" data-price="149.90">R$ 149,90</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Input Margem Desejada (Modo 2) -->
-          <div id="margin-input-group" style="display: none;">
-            <div class="form-group">
-              <label class="form-label" for="target-margin-input">
-                <span>Margem Líquida Desejada (%)</span>
-                <span class="label-hint">Algoritmo iterativo automático</span>
-              </label>
-              <div class="input-wrapper">
-                <input type="number" id="target-margin-input" class="form-input has-suffix" step="1" min="5" max="90" value="50">
-                <span class="input-suffix">%</span>
-              </div>
-              <p class="form-hint-box">
-                💡 O sistema calcula o preço exato que você deve cobrar para garantir essa porcentagem líquida limpa no bolso.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 3: CUSTOS DE IMPRESSÃO 3D -->
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title-group">
-              <span class="step-badge">3 · PARÂMETROS DA PEÇA & IMPRESSÃO 3D</span>
+              <span class="step-badge">1 · PEÇA, PRODUÇÃO & FORMAÇÃO DE KIT</span>
             </div>
           </div>
 
@@ -350,64 +193,302 @@
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- CARD: MODO LOTE & ATACADO -->
-        <div class="card card-batch">
-          <div class="card-header">
-            <div class="card-title-group">
-              <span class="step-badge" style="color: var(--accent-blue);">PRODUÇÃO EM LOTE / ATACADO (OPCIONAL)</span>
-            </div>
-            <span id="batch-active-badge" class="batch-badge" style="display: none;">Lote Ativo</span>
-          </div>
-          
-          <div class="form-grid">
+          <!-- SEÇÃO: QUANTIDADE / KIT MULTIPLICADOR -->
+          <div style="margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border-light);">
             <div class="form-group full-width">
               <label class="form-label" for="batch-qty-input">
-                <span>Quantidade de Peças no Pedido</span>
-                <span class="label-hint">Para pedidos em quantidade ou atacado</span>
+                <span>📦 Formação de Kit ou Lote da Peça</span>
+                <span class="label-hint">Multiplica automaticamente toda a equação de custo</span>
               </label>
               <div class="input-wrapper">
                 <input type="number" id="batch-qty-input" class="form-input has-suffix" min="1" max="10000" value="1">
-                <span class="input-suffix">un</span>
+                <span class="input-suffix">unidades</span>
               </div>
               <div class="quick-pills batch-quick-pills">
-                <span style="font-size: 10px; color: var(--text-dim); margin-right: 4px; align-self: center;">Atalhos:</span>
+                <span style="font-size: 10px; color: var(--text-dim); margin-right: 4px; align-self: center;">Kits:</span>
                 <button type="button" class="quick-pill batch-pill active" data-qty="1">1 un (Unitário)</button>
-                <button type="button" class="quick-pill batch-pill" data-qty="5">5 un</button>
-                <button type="button" class="quick-pill batch-pill" data-qty="10">10 un</button>
-                <button type="button" class="quick-pill batch-pill" data-qty="25">25 un</button>
-                <button type="button" class="quick-pill batch-pill" data-qty="50">50 un</button>
-                <button type="button" class="quick-pill batch-pill" data-qty="100">100 un</button>
+                <button type="button" class="quick-pill batch-pill" data-qty="2">Kit com 2</button>
+                <button type="button" class="quick-pill batch-pill" data-qty="3">Kit com 3</button>
+                <button type="button" class="quick-pill batch-pill" data-qty="4">Kit com 4</button>
+                <button type="button" class="quick-pill batch-pill" data-qty="5">Kit com 5</button>
+                <button type="button" class="quick-pill batch-pill" data-qty="10">Kit com 10</button>
               </div>
             </div>
 
+            <div class="form-grid" style="margin-top: 10px;">
+              <div class="form-group">
+                <label class="form-label">
+                  <span>Embalagem do Kit</span>
+                </label>
+                <div class="radio-group" style="margin-top: 6px;">
+                  <label class="radio-label">
+                    <input type="radio" name="batch-pack-tier" value="single" checked>
+                    <span>📦 Caixa única pro kit (Econômico)</span>
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" name="batch-pack-tier" value="individual">
+                    <span>🏷️ Embalagem por peça</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="batch-discount-input">
+                  <span>Desconto no Kit / Atacado (%)</span>
+                  <span class="label-hint">Opcional para cliente</span>
+                </label>
+                <div class="input-wrapper">
+                  <input type="number" id="batch-discount-input" class="form-input has-suffix" min="0" max="80" step="1" value="0">
+                  <span class="input-suffix">% OFF</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- EQUAÇÃO DO CUSTO DE PRODUÇÃO MULTIPLICADA -->
+          <div class="production-equation-box" id="prod-equation-box">
+            <div class="production-equation-header">
+              <span class="production-equation-title">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+                EQUAÇÃO DO CUSTO DE PRODUÇÃO
+              </span>
+              <span id="prod-equation-badge" class="production-multiplier-badge">1 UNIDADE</span>
+            </div>
+
+            <div class="production-total-row">
+              <div>
+                <div class="production-total-label">Custo Total de Fabricação</div>
+                <div id="prod-equation-subtitle" style="font-size: 11px; color: var(--text-dim); margin-top: 2px;">
+                  Soma direta de matéria-prima, energia e insumos
+                </div>
+              </div>
+              <div class="production-total-value" id="prod-total-cost">R$ 0,00</div>
+            </div>
+            <div id="prod-unit-hint" class="production-unit-hint" style="display: none;"></div>
+
+            <div class="production-breakdown-grid">
+              <div class="breakdown-item">
+                <div class="breakdown-label">🧵 Filamento</div>
+                <div class="breakdown-value" id="prod-filament-cost">R$ 0,00</div>
+              </div>
+              <div class="breakdown-item">
+                <div class="breakdown-label">⚡ Energia Elétrica</div>
+                <div class="breakdown-value" id="prod-energy-cost">R$ 0,00</div>
+              </div>
+              <div class="breakdown-item">
+                <div class="breakdown-label">📦 Embalagem & Insumos</div>
+                <div class="breakdown-value" id="prod-pack-cost">R$ 0,00</div>
+              </div>
+              <div class="breakdown-item">
+                <div class="breakdown-label">⚙️ Depreciação / Bico</div>
+                <div class="breakdown-value" id="prod-deprec-cost">R$ 0,00</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= PASSO 2: CANAL DE VENDA ================= -->
+        <div class="card" id="card-step-marketplace">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="step-badge">2 · CANAL DE VENDA</span>
+            </div>
+          </div>
+
+          <div class="marketplace-tabs">
+            <div class="mp-tab active" data-mp="ml_premium" id="tab-ml">
+              <div class="mp-tab-icon-wrap ml-icon-wrap">
+                <svg class="mp-tab-svg" viewBox="0 0 24 24" fill="none">
+                  <rect width="24" height="24" rx="6" fill="#FFE600"/>
+                  <path d="M5.5 13.5L9 16.5L13.5 11.5L18.5 15" stroke="#2D3277" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M9.5 11.5L12 9.5L15 12" stroke="#2D3277" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="mp-tab-text">
+                <span class="mp-tab-title">Mercado Livre</span>
+                <span class="mp-tab-sub">Premium / Clássico</span>
+              </div>
+            </div>
+            <div class="mp-tab" data-mp="shopee_fge" id="tab-shopee">
+              <div class="mp-tab-icon-wrap shopee-icon-wrap">
+                <svg class="mp-tab-svg" viewBox="0 0 24 24" fill="none">
+                  <rect width="24" height="24" rx="6" fill="#EE4D2D"/>
+                  <path d="M8.5 7.5C8.5 5.57 10.07 4 12 4C13.93 4 15.5 5.57 15.5 7.5V8.5H8.5V7.5Z" stroke="white" stroke-width="1.8"/>
+                  <path d="M5.5 8.5H18.5L17.5 19.5H6.5L5.5 8.5Z" fill="#EE4D2D" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
+                  <path d="M13.2 12C13.2 11.4 12.7 11 11.9 11C11.1 11 10.7 11.4 10.7 12C10.7 13 13.3 12.8 13.3 14.3C13.3 15.1 12.6 15.7 11.8 15.7C10.8 15.7 10.3 15 10.3 14.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="mp-tab-text">
+                <span class="mp-tab-title">Shopee</span>
+                <span class="mp-tab-sub">FGE 2026 / Padrão</span>
+              </div>
+            </div>
+            <div class="mp-tab" data-mp="venda_direta" id="tab-direta">
+              <div class="mp-tab-icon-wrap direta-icon-wrap">
+                <svg class="mp-tab-svg" viewBox="0 0 24 24" fill="none">
+                  <rect width="24" height="24" rx="6" fill="#00E5A0" fill-opacity="0.2"/>
+                  <path d="M8.5 7.5L12 4L15.5 7.5L12 11L8.5 7.5ZM8.5 16.5L12 13L15.5 16.5L12 20L8.5 16.5ZM4.5 12L8 8.5L11.5 12L8 15.5L4.5 12ZM12.5 12L16 8.5L19.5 12L16 15.5L12.5 12Z" fill="#00E5A0"/>
+                </svg>
+              </div>
+              <div class="mp-tab-text">
+                <span class="mp-tab-title">Venda Direta</span>
+                <span class="mp-tab-sub">Pix / Cartão / Zap</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-options ML -->
+          <div id="ml-sub-options" class="mp-sub-options">
+            <span style="font-weight: 700; color: #fff;">Tipo de anúncio ML:</span>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="ml-tier" value="ml_premium" checked>
+                <span>Premium (19% + Fixo/Frete)</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="ml-tier" value="ml_classico">
+                <span>Clássico (14% + Fixo/Frete)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Sub-options Shopee -->
+          <div id="shopee-sub-options" class="mp-sub-options" style="display: none;">
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="shopee-tier" value="shopee_fge" checked>
+                <span>Frete Grátis Extra (20% + R$ 4,00)</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="shopee-tier" value="shopee_padrao">
+                <span>Padrão (14% + R$ 4,00)</span>
+              </label>
+            </div>
+            <label class="checkbox-label" style="border-left: 1px solid var(--border-light); padding-left: 10px;">
+              <input type="checkbox" id="shopee-cpf-checkbox">
+              <span>Vendedor CPF (+R$ 5,00 taxa extra)</span>
+            </label>
+          </div>
+
+          <!-- Sub-options Venda Direta -->
+          <div id="direta-sub-options" class="mp-sub-options" style="display: none;">
+            <span style="font-weight: 700; color: #fff;">Forma de Recebimento:</span>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="direta-tier" value="pix" checked>
+                <span>Pix / Dinheiro (0% taxa)</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="direta-tier" value="card">
+                <span>Cartão de Crédito à Vista (3,5% taxa)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= PASSO 3: PRECIFICAÇÃO RECOMENDADA PARA INTERNET ================= -->
+        <div class="card" id="card-step-pricing">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="step-badge">3 · PRECIFICAÇÃO PARA A INTERNET</span>
+            </div>
+            <span id="batch-active-badge" class="batch-badge" style="display: none;">Kit Ativo</span>
+          </div>
+
+          <!-- CARDS INTELIGENTES: BOM PREÇO & PREÇO IDEAL -->
+          <div class="smart-pricing-grid">
+            <!-- Card Bom Preço -->
+            <div class="smart-price-card card-good" id="card-good-price">
+              <div>
+                <div class="smart-price-card-header">
+                  <span class="smart-price-badge">Giro Rápido</span>
+                  <span class="smart-price-active-tag" id="tag-good-active">✓ ATIVO</span>
+                </div>
+                <div class="smart-price-title">🟢 Bom Preço na Internet</div>
+                <div class="smart-price-desc">Preço competitivo para vender com bom giro em marketplaces.</div>
+                <div class="smart-price-number" id="smart-good-price">R$ 0,00</div>
+                <div class="smart-price-metrics">
+                  Lucro Líquido: <strong id="smart-good-profit">R$ 0,00</strong><br>
+                  Margem Líquida: <strong id="smart-good-margin">0,0%</strong>
+                </div>
+              </div>
+              <button type="button" class="smart-price-btn" id="btn-use-good-price">
+                Usar Bom Preço
+              </button>
+            </div>
+
+            <!-- Card Preço Ideal -->
+            <div class="smart-price-card card-ideal" id="card-ideal-price">
+              <div>
+                <div class="smart-price-card-header">
+                  <span class="smart-price-badge">Recomendado</span>
+                  <span class="smart-price-active-tag" id="tag-ideal-active">✓ ATIVO</span>
+                </div>
+                <div class="smart-price-title">🌟 Preço Ideal para 3D</div>
+                <div class="smart-price-desc">Margem recomendada (~52% líquida) para alta rentabilidade.</div>
+                <div class="smart-price-number" id="smart-ideal-price">R$ 0,00</div>
+                <div class="smart-price-metrics">
+                  Lucro Líquido: <strong id="smart-ideal-profit">R$ 0,00</strong><br>
+                  Margem Líquida: <strong id="smart-ideal-margin">0,0%</strong>
+                </div>
+              </div>
+              <button type="button" class="smart-price-btn" id="btn-use-ideal-price">
+                Usar Preço Ideal
+              </button>
+            </div>
+          </div>
+
+          <!-- Mode switcher -->
+          <div class="mode-toggle-container">
+            <button type="button" id="mode-price-btn" class="mode-btn active">
+              Preço Praticado no Anúncio
+            </button>
+            <button type="button" id="mode-margin-btn" class="mode-btn">
+              🎯 Ajustar por Margem Alvo
+            </button>
+          </div>
+
+          <!-- Input Preço de Venda -->
+          <div id="price-input-group">
             <div class="form-group">
-              <label class="form-label" for="batch-discount-input">
-                <span>Desconto de Atacado (%)</span>
-                <span class="label-hint">Concedido ao cliente</span>
+              <label class="form-label" for="sale-price-input">
+                <span>Preço do Anúncio (Valor cobrado do cliente)</span>
+                <span class="label-hint">Valor final no anúncio</span>
               </label>
               <div class="input-wrapper">
-                <input type="number" id="batch-discount-input" class="form-input has-suffix" min="0" max="80" step="1" value="0">
-                <span class="input-suffix">% OFF</span>
+                <span class="input-prefix">R$</span>
+                <input type="number" id="sale-price-input" class="form-input has-prefix" step="0.10" min="0" value="" placeholder="0,00">
+              </div>
+              <div class="quick-pills">
+                <span style="font-size: 10px; color: var(--text-dim); margin-right: 4px; align-self: center;">Sugestões:</span>
+                <button type="button" class="quick-pill" data-price="29.90">R$ 29,90</button>
+                <button type="button" class="quick-pill" data-price="49.90">R$ 49,90</button>
+                <button type="button" class="quick-pill" data-price="74.90">R$ 74,90</button>
+                <button type="button" class="quick-pill" data-price="99.90">R$ 99,90</button>
+                <button type="button" class="quick-pill" data-price="149.90">R$ 149,90</button>
               </div>
             </div>
+          </div>
 
+          <!-- Input Margem Desejada (Modo 2) -->
+          <div id="margin-input-group" style="display: none;">
             <div class="form-group">
-              <label class="form-label">
-                <span>Tipo de Embalagem do Lote</span>
-                <span class="label-hint">Impacto direto no custo</span>
+              <label class="form-label" for="target-margin-input">
+                <span>Margem Líquida Desejada (%)</span>
+                <span class="label-hint">Algoritmo iterativo automático</span>
               </label>
-              <div class="radio-group" style="margin-top: 6px;">
-                <label class="radio-label">
-                  <input type="radio" name="batch-pack-tier" value="single" checked>
-                  <span>📦 Caixa única pro lote (Econômico)</span>
-                </label>
-                <label class="radio-label">
-                  <input type="radio" name="batch-pack-tier" value="individual">
-                  <span>🏷️ Embalagem individual por peça</span>
-                </label>
+              <div class="input-wrapper">
+                <input type="number" id="target-margin-input" class="form-input has-suffix" step="1" min="5" max="90" value="50">
+                <span class="input-suffix">%</span>
               </div>
+              <p class="form-hint-box">
+                💡 O sistema calcula o preço exato que você deve cobrar para garantir essa porcentagem líquida limpa no bolso.
+              </p>
             </div>
           </div>
         </div>

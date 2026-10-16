@@ -104,6 +104,31 @@ const elements = {
   batchTotalTime: document.getElementById('batch-total-time'),
   batchTotalFilament: document.getElementById('batch-total-filament'),
 
+  // Equação do Custo de Produção (Passo 1)
+  prodEquationBox: document.getElementById('prod-equation-box'),
+  prodEquationBadge: document.getElementById('prod-equation-badge'),
+  prodTotalCost: document.getElementById('prod-total-cost'),
+  prodFilamentCost: document.getElementById('prod-filament-cost'),
+  prodEnergyCost: document.getElementById('prod-energy-cost'),
+  prodPackCost: document.getElementById('prod-pack-cost'),
+  prodDeprecCost: document.getElementById('prod-deprec-cost'),
+  prodUnitHint: document.getElementById('prod-unit-hint'),
+
+  // Sugestões Inteligentes de Precificação (Passo 3)
+  cardGoodPrice: document.getElementById('card-good-price'),
+  smartGoodPrice: document.getElementById('smart-good-price'),
+  smartGoodProfit: document.getElementById('smart-good-profit'),
+  smartGoodMargin: document.getElementById('smart-good-margin'),
+  btnUseGoodPrice: document.getElementById('btn-use-good-price'),
+  tagGoodActive: document.getElementById('tag-good-active'),
+
+  cardIdealPrice: document.getElementById('card-ideal-price'),
+  smartIdealPrice: document.getElementById('smart-ideal-price'),
+  smartIdealProfit: document.getElementById('smart-ideal-profit'),
+  smartIdealMargin: document.getElementById('smart-ideal-margin'),
+  btnUseIdealPrice: document.getElementById('btn-use-ideal-price'),
+  tagIdealActive: document.getElementById('tag-ideal-active'),
+
   // Displays de Resultado Unitário
   profitHeroCard: document.getElementById('profit-hero-card'),
   calcEmptyNotice: document.getElementById('calc-empty-state-notice'),
@@ -420,9 +445,14 @@ function renderDonutChart(result, effectivePrice, isActive = true) {
   });
 }
 
-// Verifica se há produto ativo (arquivo subido ou peso/tempo informados)
+// Verifica se há especificações de produção da peça preenchidas ou arquivo importado
+function hasActiveSpecs(s) {
+  return (s.weightGrams > 0) || (s.printHours > 0 || s.printMinutes > 0) || s.fileUploaded;
+}
+
+// Verifica se há produto ativo (arquivo subido ou peso/tempo informados com preço definido)
 function hasActiveProduct(s) {
-  if (s.fileUploaded) return true;
+  if (s.fileUploaded && s.salePrice > 0) return true;
   const hasSpecs = (s.weightGrams > 0) || (s.printHours > 0 || s.printMinutes > 0);
   if (!hasSpecs) return false;
   return s.calcMode === 'margin' ? (s.targetMargin > 0) : (s.salePrice > 0);
@@ -431,6 +461,89 @@ function hasActiveProduct(s) {
 // Renderiza os cálculos e atualiza a interface
 function updateCalculations() {
   syncStateFromInputs();
+  const specsActive = hasActiveSpecs(state);
+
+  // 1. Equação do Custo de Produção (Unitário ou Multiplicado por Kit)
+  const prodEq = engine.computeProductionEquation(state, state.quantity, state.batchPackagingType);
+  const smartRecs = engine.computeSmartRecommendations(state, state.quantity, state.batchPackagingType);
+
+  // Atualiza Visualizador da Equação de Produção (Passo 1)
+  if (elements.prodTotalCost) {
+    elements.prodTotalCost.textContent = engine.formatCurrency(specsActive ? prodEq.totalProductionCost : 0);
+  }
+  if (elements.prodFilamentCost) {
+    elements.prodFilamentCost.textContent = engine.formatCurrency(specsActive ? prodEq.totalFilamentCost : 0);
+  }
+  if (elements.prodEnergyCost) {
+    elements.prodEnergyCost.textContent = engine.formatCurrency(specsActive ? prodEq.totalElectricityCost : 0);
+  }
+  if (elements.prodPackCost) {
+    elements.prodPackCost.textContent = engine.formatCurrency(specsActive ? (prodEq.effectivePackagingCost + prodEq.totalInsumosCost) : 0);
+  }
+  if (elements.prodDeprecCost) {
+    elements.prodDeprecCost.textContent = engine.formatCurrency(specsActive ? prodEq.totalDepreciationCost : 0);
+  }
+  if (elements.prodEquationBadge) {
+    elements.prodEquationBadge.textContent = state.quantity > 1 
+      ? `KIT COM ${state.quantity} UNIDADES (${state.quantity}x)` 
+      : '1 UNIDADE';
+  }
+  if (elements.prodUnitHint) {
+    if (specsActive && state.quantity > 1) {
+      elements.prodUnitHint.style.display = 'block';
+      elements.prodUnitHint.textContent = `Equivale a ${engine.formatCurrency(prodEq.unitProductionCost)} de custo por peça no kit de ${state.quantity} unidades`;
+    } else {
+      elements.prodUnitHint.style.display = 'none';
+    }
+  }
+
+  // Sincroniza visualmente as pills de Kit/Quantidade
+  if (elements.batchPills) {
+    elements.batchPills.forEach(p => {
+      const pQty = parseInt(p.getAttribute('data-qty'), 10);
+      p.classList.toggle('active', pQty === state.quantity);
+    });
+  }
+
+  // 2. Atualiza Cards Inteligentes de Precificação (Passo 3)
+  if (elements.smartGoodPrice) {
+    elements.smartGoodPrice.textContent = engine.formatCurrency(specsActive ? smartRecs.goodPrice.price : 0);
+  }
+  if (elements.smartGoodProfit) {
+    elements.smartGoodProfit.textContent = engine.formatCurrency(specsActive ? smartRecs.goodPrice.netProfit : 0);
+  }
+  if (elements.smartGoodMargin) {
+    elements.smartGoodMargin.textContent = specsActive ? engine.formatPercent(smartRecs.goodPrice.netMarginPercent) : '0,0%';
+  }
+
+  if (elements.smartIdealPrice) {
+    elements.smartIdealPrice.textContent = engine.formatCurrency(specsActive ? smartRecs.idealPrice.price : 0);
+  }
+  if (elements.smartIdealProfit) {
+    elements.smartIdealProfit.textContent = engine.formatCurrency(specsActive ? smartRecs.idealPrice.netProfit : 0);
+  }
+  if (elements.smartIdealMargin) {
+    elements.smartIdealMargin.textContent = specsActive ? engine.formatPercent(smartRecs.idealPrice.netMarginPercent) : '0,0%';
+  }
+
+  // Se o usuário preencheu peso/tempo mas não inseriu preço, auto-sugere o Preço Ideal
+  if (specsActive && state.calcMode === 'price' && (!elements.salePriceInput.value || parseFloat(elements.salePriceInput.value) === 0)) {
+    if (smartRecs.idealPrice && smartRecs.idealPrice.price > 0) {
+      state.salePrice = smartRecs.idealPrice.price;
+      elements.salePriceInput.value = smartRecs.idealPrice.price.toFixed(2);
+    }
+  }
+
+  // Ativação visual dos cards de recomendação
+  const currentPrice = state.salePrice;
+  const isGoodActive = specsActive && Math.abs(currentPrice - smartRecs.goodPrice.price) < 0.15;
+  const isIdealActive = specsActive && Math.abs(currentPrice - smartRecs.idealPrice.price) < 0.15;
+
+  if (elements.cardGoodPrice) elements.cardGoodPrice.classList.toggle('active', isGoodActive);
+  if (elements.tagGoodActive) elements.tagGoodActive.style.display = isGoodActive ? 'inline-block' : 'none';
+  if (elements.cardIdealPrice) elements.cardIdealPrice.classList.toggle('active', isIdealActive);
+  if (elements.tagIdealActive) elements.tagIdealActive.style.display = isIdealActive ? 'inline-block' : 'none';
+
   const isActive = hasActiveProduct(state);
 
   // Alterna banner de aviso e estilo do hero card
@@ -506,17 +619,28 @@ function updateCalculations() {
     return;
   }
 
-  // --- CÁLCULO ATIVO QUANDO HÁ PRODUTO ---
+  // --- CÁLCULO ATIVO QUANDO HÁ PRODUTO & PREÇO ---
+  // Prepara inputs considerando a quantidade de peças multiplicada no Kit
+  const kitInputs = {
+    ...state,
+    weightGrams: prodEq.totalWeightGrams,
+    printHours: Math.floor(prodEq.totalPrintHours),
+    printMinutes: Math.round((prodEq.totalPrintHours % 1) * 60),
+    packagingCost: prodEq.effectivePackagingCost,
+    extraInsumosCost: prodEq.totalInsumosCost,
+    machineHourCost: state.machineHourCost
+  };
+
   let effectivePrice = state.salePrice;
 
   if (state.calcMode === 'margin') {
-    effectivePrice = engine.findPriceForTargetMargin(state.targetMargin, state);
+    effectivePrice = engine.findPriceForTargetMargin(state.targetMargin, kitInputs);
     state.salePrice = effectivePrice;
     elements.salePriceInput.value = effectivePrice.toFixed(2);
   }
 
-  // 1. Cálculo Unitário Detalhado
-  const result = engine.computeCostsForPrice(effectivePrice, state);
+  // 1. Cálculo Detalhado para o Produto / Kit
+  const result = engine.computeCostsForPrice(effectivePrice, kitInputs);
 
   // Atualiza Card Principal de Lucro Líquido
   elements.netProfitBig.textContent = engine.formatCurrency(result.netProfit);
@@ -535,34 +659,34 @@ function updateCalculations() {
     elements.netMarginBig.style.color = 'var(--accent-green)';
   }
 
-  const profitPerHour = result.netProfit / result.totalHours;
+  const profitPerHour = result.netProfit / (result.totalHours || 0.1);
   const dailyPotential = profitPerHour * state.dailyWorkingHours;
 
   elements.profitPerHourDisp.textContent = `${engine.formatCurrency(profitPerHour)}/hora`;
   elements.dailyPotentialDisp.textContent = `${engine.formatCurrency(dailyPotential)}/dia (${state.dailyWorkingHours}h)`;
 
-  // 2. Modo Lote / Atacado
+  // 2. Modo Lote / Atacado / Kit
   if (state.quantity > 1) {
-    const batch = engine.computeBatchMetrics(
-      effectivePrice, 
-      state.quantity, 
-      state, 
-      state.batchPackagingType, 
-      state.batchDiscountPercent
-    );
-
-    if (elements.batchActiveBadge) elements.batchActiveBadge.style.display = 'inline-block';
+    if (elements.batchActiveBadge) {
+      elements.batchActiveBadge.style.display = 'inline-block';
+      elements.batchActiveBadge.textContent = `Kit ${state.quantity} un`;
+    }
     if (elements.batchResultCard) {
       elements.batchResultCard.style.display = 'block';
-      elements.batchDispQty.textContent = batch.quantity;
-      elements.batchTotalProfit.textContent = engine.formatCurrency(batch.batchNetProfit);
-      elements.batchTotalMargin.textContent = engine.formatPercent(batch.batchNetMarginPercent);
-      elements.batchUnitProfit.textContent = engine.formatCurrency(batch.unitNetProfit);
-      elements.batchTotalRevenue.textContent = engine.formatCurrency(batch.totalBatchPrice);
-      elements.batchTotalTime.textContent = `${batch.totalBatchHours}h (${batch.totalPrintDays} dias)`;
-      elements.batchTotalFilament.textContent = `${batch.totalFilamentKg} kg (${batch.spoolsEstimated} ${batch.spoolsEstimated === 1 ? 'carretel' : 'carretéis'})`;
+      elements.batchDispQty.textContent = state.quantity;
+      elements.batchTotalProfit.textContent = engine.formatCurrency(result.netProfit);
+      elements.batchTotalMargin.textContent = engine.formatPercent(result.netMarginPercent);
+      elements.batchUnitProfit.textContent = engine.formatCurrency(result.netProfit / state.quantity);
+      elements.batchTotalRevenue.textContent = engine.formatCurrency(effectivePrice);
+      
+      const days = Math.round((prodEq.totalPrintHours / state.dailyWorkingHours) * 10) / 10;
+      elements.batchTotalTime.textContent = `${(prodEq.totalPrintHours).toFixed(1)}h (${days} dias)`;
+      
+      const kg = Math.round((prodEq.totalWeightGrams / 1000) * 100) / 100;
+      const spools = Math.max(1, Math.ceil(kg));
+      elements.batchTotalFilament.textContent = `${kg} kg (${spools} ${spools === 1 ? 'carretel' : 'carretéis'})`;
 
-      if (batch.batchNetProfit < 0) {
+      if (result.netProfit < 0) {
         elements.batchTotalProfit.style.color = 'var(--accent-red)';
       } else {
         elements.batchTotalProfit.style.color = 'var(--accent-green)';
@@ -586,7 +710,7 @@ function updateCalculations() {
     const isUnderThreshold = state.marketplaceKey.startsWith('ml') && effectivePrice < 79;
     elements.cascadeShippingLabel.textContent = isUnderThreshold 
       ? '└─ Custo Fixo ML (< R$ 79)' 
-      : `└─ Frete estimado (${state.weightGrams}g)`;
+      : `└─ Frete estimado (${prodEq.totalWeightGrams}g)`;
     elements.cascadeShippingValue.textContent = `− ${engine.formatCurrency(result.shippingCost)}`;
   } else {
     elements.cascadeShippingBox.style.display = 'none';
@@ -598,7 +722,7 @@ function updateCalculations() {
   elements.cascadeElectricityLabel.textContent = `└─ Energia elétrica (${(result.totalHours).toFixed(1)}h · ${state.printerWatts}W)`;
   elements.cascadeElectricityValue.textContent = `− ${engine.formatCurrency(result.electricityCost)}`;
 
-  elements.cascadeFilamentLabel.textContent = `└─ Filamento (${state.weightGrams}g · R$${state.filamentPriceKg}/kg)`;
+  elements.cascadeFilamentLabel.textContent = `└─ Filamento (${prodEq.totalWeightGrams}g · R$${state.filamentPriceKg}/kg)`;
   elements.cascadeFilamentValue.textContent = `− ${engine.formatCurrency(result.filamentCost)}`;
 
   const totalPackagingAndInsumos = result.packagingCost + result.insumosCost + result.depreciationCost;
@@ -621,22 +745,15 @@ function updateCalculations() {
   elements.capMonthlyProfit.textContent = engine.formatCurrency(capacity.monthlyProfit);
 
   // 7. Comparativo Multicanal Simultâneo
-  renderMultiChannelMatrix(effectivePrice, true);
+  renderMultiChannelMatrix(effectivePrice, true, kitInputs);
 
   // 8. Barra Flutuante Mobile
   if (elements.mobileStickyBar) {
     const mp = MARKETPLACE_CONFIG[state.marketplaceKey];
     if (elements.mobileChannelTag) elements.mobileChannelTag.textContent = mp ? (mp.subTag || mp.tag) : 'Ativo';
     
-    if (state.quantity > 1) {
-      const batch = engine.computeBatchMetrics(effectivePrice, state.quantity, state, state.batchPackagingType, state.batchDiscountPercent);
-      if (elements.mobileProfitVal) elements.mobileProfitVal.textContent = engine.formatCurrency(batch.batchNetProfit);
-      if (elements.mobileMarginBadge) elements.mobileMarginBadge.textContent = engine.formatPercent(batch.batchNetMarginPercent);
-    } else {
-      if (elements.mobileProfitVal) elements.mobileProfitVal.textContent = engine.formatCurrency(result.netProfit);
-      if (elements.mobileMarginBadge) elements.mobileMarginBadge.textContent = engine.formatPercent(result.netMarginPercent);
-    }
-
+    if (elements.mobileProfitVal) elements.mobileProfitVal.textContent = engine.formatCurrency(result.netProfit);
+    if (elements.mobileMarginBadge) elements.mobileMarginBadge.textContent = engine.formatPercent(result.netMarginPercent);
     if (elements.mobileProfitVal) {
       elements.mobileProfitVal.style.color = result.netProfit >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
     }
@@ -644,7 +761,7 @@ function updateCalculations() {
 }
 
 // Renderiza a matriz comparativa de marketplaces
-function renderMultiChannelMatrix(currentPrice, isActive = true) {
+function renderMultiChannelMatrix(currentPrice, isActive = true, activeInputs = state) {
   const channels = [
     { key: 'ml_premium', name: 'Mercado Livre Premium', icon: '🟡' },
     { key: 'ml_classico', name: 'Mercado Livre Clássico', icon: '🟡' },
@@ -680,7 +797,7 @@ function renderMultiChannelMatrix(currentPrice, isActive = true) {
   }
 
   elements.matrixBody.innerHTML = channels.map(ch => {
-    const calcCopy = { ...state, marketplaceKey: ch.key };
+    const calcCopy = { ...activeInputs, marketplaceKey: ch.key };
     const r = engine.computeCostsForPrice(currentPrice, calcCopy);
     const m = engine.getMarginClassification(r.netMarginPercent);
     const isCurrent = state.marketplaceKey === ch.key;
@@ -837,14 +954,13 @@ async function handleGCodeFile(file) {
 
       state.fileUploaded = true;
 
-      // Se o preço de venda estiver vazio ou 0, sugere automaticamente um preço com 50% de margem
+      // Se o preço de venda estiver vazio ou 0, sugere automaticamente o Preço Ideal
       const currentPriceVal = parseFloat(elements.salePriceInput.value) || 0;
       if (currentPriceVal === 0 && state.calcMode === 'price') {
-        const suggested = engine.findPriceForTargetMargin(50, state);
-        if (suggested > 0) {
-          const rounded = Math.max(15, Math.ceil(suggested - 0.10) - 0.10);
-          elements.salePriceInput.value = rounded.toFixed(2);
-          state.salePrice = rounded;
+        const smartRecs = engine.computeSmartRecommendations(state, state.quantity, state.batchPackagingType);
+        if (smartRecs.idealPrice && smartRecs.idealPrice.price > 0) {
+          elements.salePriceInput.value = smartRecs.idealPrice.price.toFixed(2);
+          state.salePrice = smartRecs.idealPrice.price;
         }
       }
 
@@ -872,6 +988,8 @@ function resetCalculation() {
   state.weightGrams = 0;
   state.printHours = 0;
   state.printMinutes = 0;
+  state.quantity = 1;
+  state.batchDiscountPercent = 0;
   state.customShipping = null;
 
   elements.productNameInput.value = '';
@@ -879,6 +997,8 @@ function resetCalculation() {
   elements.hoursInput.value = '';
   elements.minutesInput.value = '';
   elements.weightInput.value = '';
+  if (elements.batchQtyInput) elements.batchQtyInput.value = 1;
+  if (elements.batchDiscountInput) elements.batchDiscountInput.value = 0;
   if (elements.gcodeFileInput) elements.gcodeFileInput.value = '';
 
   if (elements.dropzoneStatus) elements.dropzoneStatus.style.display = 'none';
@@ -1123,13 +1243,78 @@ function setupEventListeners() {
     });
   });
 
-  // Quick pills do Modo Lote
+  // Botões de 1 clique para Bom Preço e Preço Ideal
+  if (elements.btnUseGoodPrice) {
+    elements.btnUseGoodPrice.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const currentRecs = engine.computeSmartRecommendations(state, state.quantity, state.batchPackagingType);
+      if (currentRecs.goodPrice && currentRecs.goodPrice.price > 0) {
+        state.salePrice = currentRecs.goodPrice.price;
+        elements.salePriceInput.value = currentRecs.goodPrice.price.toFixed(2);
+        if (state.calcMode === 'margin') {
+          elements.modePriceBtn.click();
+        } else {
+          updateCalculations();
+        }
+        showToast(`Bom Preço aplicado: R$ ${currentRecs.goodPrice.price.toFixed(2).replace('.', ',')}`, '🟢');
+      }
+    });
+  }
+
+  if (elements.cardGoodPrice) {
+    elements.cardGoodPrice.addEventListener('click', (e) => {
+      if (e.target !== elements.btnUseGoodPrice) {
+        elements.btnUseGoodPrice?.click();
+      }
+    });
+  }
+
+  if (elements.btnUseIdealPrice) {
+    elements.btnUseIdealPrice.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const currentRecs = engine.computeSmartRecommendations(state, state.quantity, state.batchPackagingType);
+      if (currentRecs.idealPrice && currentRecs.idealPrice.price > 0) {
+        state.salePrice = currentRecs.idealPrice.price;
+        elements.salePriceInput.value = currentRecs.idealPrice.price.toFixed(2);
+        if (state.calcMode === 'margin') {
+          elements.modePriceBtn.click();
+        } else {
+          updateCalculations();
+        }
+        showToast(`Preço Ideal aplicado: R$ ${currentRecs.idealPrice.price.toFixed(2).replace('.', ',')}`, '🌟');
+      }
+    });
+  }
+
+  if (elements.cardIdealPrice) {
+    elements.cardIdealPrice.addEventListener('click', (e) => {
+      if (e.target !== elements.btnUseIdealPrice) {
+        elements.btnUseIdealPrice?.click();
+      }
+    });
+  }
+
+  // Quick pills do Modo Kit / Lote
   elements.batchPills.forEach(pill => {
     pill.addEventListener('click', (e) => {
       const qty = parseInt(e.currentTarget.getAttribute('data-qty'), 10);
       if (elements.batchQtyInput) elements.batchQtyInput.value = qty;
+      state.quantity = qty;
       elements.batchPills.forEach(p => p.classList.remove('active'));
       e.currentTarget.classList.add('active');
+
+      // Se temos dados da peça e estava ativo um dos preços recomendados, ajusta o preço para o kit automaticamente
+      if (hasActiveSpecs(state) && state.calcMode === 'price') {
+        const newRecs = engine.computeSmartRecommendations(state, qty, state.batchPackagingType);
+        if (elements.cardGoodPrice && elements.cardGoodPrice.classList.contains('active')) {
+          state.salePrice = newRecs.goodPrice.price;
+          elements.salePriceInput.value = newRecs.goodPrice.price.toFixed(2);
+        } else if (elements.cardIdealPrice && (elements.cardIdealPrice.classList.contains('active') || state.salePrice <= 0)) {
+          state.salePrice = newRecs.idealPrice.price;
+          elements.salePriceInput.value = newRecs.idealPrice.price.toFixed(2);
+        }
+      }
+
       updateCalculations();
     });
   });
