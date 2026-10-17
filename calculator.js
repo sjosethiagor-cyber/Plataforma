@@ -139,6 +139,11 @@ export class PricingEngine {
       } else {
         shippingCost = mp.estimatedShipping || 0;
       }
+    } else if (marketplaceKey === 'tiktok_shop') {
+      const commRate = mp.commissionPercent / 100;
+      marketplaceFee = price * commRate + (mp.fixedFee || 4.00);
+      marketplaceDetailName = `Taxa TikTok Shop (${mp.commissionPercent}% + R$ ${(mp.fixedFee || 4).toFixed(2)})`;
+      shippingCost = customShipping ? Number(customShipping) : 0;
     } else if (marketplaceKey === 'venda_direta') {
       if (paymentMethodDirect === 'card') {
         marketplaceFee = price * (Number(cardFeePercentDirect) / 100);

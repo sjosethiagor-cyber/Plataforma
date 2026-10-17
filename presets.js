@@ -89,17 +89,29 @@ export const MARKETPLACE_CONFIG = {
     estimatedShipping: 0.00,
     info: 'Taxas 2026: 14% de comissão (teto de R$ 103 por item) + R$ 4,00 por item vendido.'
   },
+  tiktok_shop: {
+    id: 'tiktok_shop',
+    name: 'TikTok Shop',
+    badge: '14% + R$ 4,00',
+    tag: 'TikTok',
+    subTag: 'Shop',
+    color: '#00f2fe',
+    commissionPercent: 14.0,
+    fixedFee: 4.00,
+    estimatedShipping: 0.00,
+    info: 'TikTok Shop: 14% de comissão padrão + R$ 4,00 de taxa por venda.'
+  },
   venda_direta: {
     id: 'venda_direta',
-    name: 'Venda Direta / WhatsApp / Site',
-    badge: 'Sem Taxa de Marketplace',
-    tag: 'Direta',
-    subTag: 'Pix/Cartão',
+    name: 'Venda Física / Direta (Pix)',
+    badge: '0% Taxa de Canal',
+    tag: 'Física/Pix',
+    subTag: '0% taxa',
     color: '#00e5a0',
     commissionPercent: 0.0,
     cardFeePercent: 3.5,
     fixedFee: 0.0,
     estimatedShipping: 0.0,
-    info: 'Sem comissões de terceiros. Apenas taxa do meio de pagamento (0% no Pix ou taxa de cartão).'
+    info: 'Venda presencial ou direta. 0% de comissão no Pix/Dinheiro ou taxa da maquininha.'
   }
 };
