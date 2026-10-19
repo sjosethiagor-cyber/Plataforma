@@ -51,6 +51,10 @@ const elements = {
   mlSubOptions: document.getElementById('ml-sub-options'),
   shopeeSubOptions: document.getElementById('shopee-sub-options'),
   diretaSubOptions: document.getElementById('direta-sub-options'),
+  shopeeCpfToggle: document.getElementById('shopee-cpf-toggle'),
+  mlCustomShippingInput: document.getElementById('ml-custom-shipping-input'),
+  diretaCardFeeBox: document.getElementById('direta-card-fee-box'),
+  cardFeeInput: document.getElementById('card-fee-input'),
 
   // Modos de Precificação (Margem % vs Preço R$)
   modePriceBtn: document.getElementById('mode-price-btn'),
@@ -102,8 +106,9 @@ const elements = {
   prodDeprecCost: document.getElementById('prod-deprec-cost'),
   prodUnitHint: document.getElementById('prod-unit-hint'),
 
-  // Card Principal de Precificação Clara & Segura (Passo 3)
-  pricingHeroResult: document.getElementById('pricing-hero-result'),
+  // Card DETALHAMENTO (Fluxo em Cascata & Resultado Financeiro - Passo 3)
+  detCard: document.getElementById('detalhamento-card'),
+  detSalePrice: document.getElementById('result-sale-price'),
   resultSalePrice: document.getElementById('result-sale-price'),
   netProfitBig: document.getElementById('net-profit-big'),
   netMarginBig: document.getElementById('net-margin-big'),
@@ -111,6 +116,33 @@ const elements = {
   pricingCostFabricacao: document.getElementById('pricing-cost-fabricacao'),
   pricingCostTaxas: document.getElementById('pricing-cost-taxas'),
   pricingLucroResumo: document.getElementById('pricing-lucro-resumo'),
+
+  detTaxaDeduction: document.getElementById('det-taxa-deduction'),
+  detTaxaPercent: document.getElementById('det-taxa-percent'),
+  detTaxaBalance: document.getElementById('det-taxa-balance'),
+  detImpostoDeduction: document.getElementById('det-imposto-deduction'),
+  detImpostoPercent: document.getElementById('det-imposto-percent'),
+  detImpostoBalance: document.getElementById('det-imposto-balance'),
+  detEnergiaDeduction: document.getElementById('det-energia-deduction'),
+  detEnergiaPercent: document.getElementById('det-energia-percent'),
+  detEnergiaBalance: document.getElementById('det-energia-balance'),
+  detFilamentoDeduction: document.getElementById('det-filamento-deduction'),
+  detFilamentoPercent: document.getElementById('det-filamento-percent'),
+  detFilamentoBalance: document.getElementById('det-filamento-balance'),
+  detEmbalagemDeduction: document.getElementById('det-embalagem-deduction'),
+  detEmbalagemPercent: document.getElementById('det-embalagem-percent'),
+  detEmbalagemBalance: document.getElementById('det-embalagem-balance'),
+  detTotalCustos: document.getElementById('det-total-custos'),
+  detEnergiaFilamento: document.getElementById('det-energia-filamento'),
+  detLucroHourly: document.getElementById('det-lucro-hourly'),
+  detCapDiario: document.getElementById('det-cap-diario'),
+  detCapMensal: document.getElementById('det-cap-mensal'),
+  detChannelHeader: document.getElementById('det-channel-header'),
+  detChannelRow1Label: document.getElementById('det-channel-row1-label'),
+  detChannelRow1Val: document.getElementById('det-channel-row1-val'),
+  detChannelRow2Label: document.getElementById('det-channel-row2-label'),
+  detChannelRow2Val: document.getElementById('det-channel-row2-val'),
+  btnSaveDetalhamento: document.getElementById('btn-save-detalhamento'),
 
   // Sugestões Rápidas (Bom Preço vs Preço Ideal)
   cardGoodPrice: document.getElementById('card-good-price'),
@@ -127,8 +159,22 @@ const elements = {
   btnUseIdealPrice: document.getElementById('btn-use-ideal-price'),
   tagIdealActive: document.getElementById('tag-ideal-active'),
 
-  // Tabela Comparativa de Canais (Passo 4)
+  // Gráfico Donut SVG (Passo 4)
+  donutSvg: document.getElementById('donut-svg'),
+  donutCenterVal: document.getElementById('donut-center-val'),
+  donutCenterLbl: document.getElementById('donut-center-lbl'),
+  donutLegend: document.getElementById('donut-legend'),
+  donutBadgeStatus: document.getElementById('donut-badge-status'),
+
+  // Tabela Comparativa de Canais (Passo 5)
   matrixBody: document.getElementById('matrix-body'),
+
+  // Estratégia de Promoção com Lucro Preservado (Passo 6)
+  promoDiscountInput: document.getElementById('promo-discount-input'),
+  promoPills: document.querySelectorAll('.promo-pill'),
+  promoAnnouncedPrice: document.getElementById('promo-announced-price'),
+  promoCustomerPays: document.getElementById('promo-customer-pays'),
+  promoTagline: document.getElementById('promo-tagline'),
 
   // Mobile Sticky Bar
   mobileStickyBar: document.getElementById('mobile-sticky-bar'),
@@ -238,6 +284,21 @@ function syncStateFromInputs() {
     state.printerWatts = parseFloat(elements.printerWattsInput.value) || 120;
   }
 
+  // Ajustes Finos de Taxas 2026
+  if (elements.shopeeCpfToggle) {
+    state.isCpfShopee = elements.shopeeCpfToggle.checked;
+  }
+  if (elements.cardFeeInput) {
+    state.cardFeePercentDirect = parseFloat(elements.cardFeeInput.value) || 3.5;
+  }
+  if (elements.mlCustomShippingInput) {
+    const v = elements.mlCustomShippingInput.value.trim();
+    state.customShipping = v !== '' ? parseFloat(v) : null;
+  }
+  if (elements.promoDiscountInput) {
+    state.promoDiscountPercent = parseFloat(elements.promoDiscountInput.value) || 10.0;
+  }
+
   if (state.calcMode === 'price') {
     if (elements.salePriceInput) state.salePrice = parseFloat(elements.salePriceInput.value) || 0;
   } else {
@@ -329,20 +390,52 @@ function updateCalculations() {
 
   // --- ESTADO ZERADO (Aguardando dados da peça) ---
   if (!isActive) {
+    if (elements.detCard) elements.detCard.classList.add('is-zeroed');
     if (elements.resultSalePrice) elements.resultSalePrice.textContent = 'R$ 0,00';
     if (elements.netProfitBig) {
       elements.netProfitBig.textContent = 'R$ 0,00';
       elements.netProfitBig.style.color = 'var(--text-muted)';
     }
     if (elements.netMarginBig) {
-      elements.netMarginBig.textContent = '0,0% de margem real';
+      elements.netMarginBig.textContent = '0.0%';
       elements.netMarginBig.style.color = 'var(--text-muted)';
     }
     if (elements.marginBadge) {
-      elements.marginBadge.textContent = 'Aguardando Peça';
+      elements.marginBadge.textContent = 'Aguardando';
       elements.marginBadge.style.color = 'var(--text-dim)';
       elements.marginBadge.style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
     }
+
+    if (elements.detTaxaDeduction) elements.detTaxaDeduction.textContent = '- R$ 0,00';
+    if (elements.detTaxaPercent) elements.detTaxaPercent.textContent = '0.0%';
+    if (elements.detTaxaBalance) elements.detTaxaBalance.textContent = '= R$ 0,00';
+
+    if (elements.detImpostoDeduction) elements.detImpostoDeduction.textContent = '- R$ 0,00';
+    if (elements.detImpostoPercent) elements.detImpostoPercent.textContent = '0.0%';
+    if (elements.detImpostoBalance) elements.detImpostoBalance.textContent = '= R$ 0,00';
+
+    if (elements.detEnergiaDeduction) elements.detEnergiaDeduction.textContent = '- R$ 0,00';
+    if (elements.detEnergiaPercent) elements.detEnergiaPercent.textContent = '0.0%';
+    if (elements.detEnergiaBalance) elements.detEnergiaBalance.textContent = '= R$ 0,00';
+
+    if (elements.detFilamentoDeduction) elements.detFilamentoDeduction.textContent = '- R$ 0,00';
+    if (elements.detFilamentoPercent) elements.detFilamentoPercent.textContent = '0.0%';
+    if (elements.detFilamentoBalance) elements.detFilamentoBalance.textContent = '= R$ 0,00';
+
+    if (elements.detEmbalagemDeduction) elements.detEmbalagemDeduction.textContent = '- R$ 0,00';
+    if (elements.detEmbalagemPercent) elements.detEmbalagemPercent.textContent = '0.0%';
+    if (elements.detEmbalagemBalance) elements.detEmbalagemBalance.textContent = '= R$ 0,00';
+
+    if (elements.detTotalCustos) elements.detTotalCustos.textContent = 'R$ 0,00';
+    if (elements.detEnergiaFilamento) elements.detEnergiaFilamento.textContent = 'R$ 0,00';
+    if (elements.detLucroHourly) elements.detLucroHourly.textContent = 'R$ 0,00/hora';
+
+    if (elements.detCapDiario) elements.detCapDiario.textContent = 'R$ 0,00';
+    if (elements.detCapMensal) elements.detCapMensal.textContent = 'R$ 0,00';
+
+    if (elements.detChannelRow1Val) elements.detChannelRow1Val.textContent = 'R$ 0,00';
+    if (elements.detChannelRow2Val) elements.detChannelRow2Val.textContent = 'R$ 0,00';
+
     if (elements.pricingCostFabricacao) elements.pricingCostFabricacao.textContent = 'R$ 0,00';
     if (elements.pricingCostTaxas) elements.pricingCostTaxas.textContent = 'R$ 0,00';
     if (elements.pricingLucroResumo) {
@@ -356,7 +449,10 @@ function updateCalculations() {
     if (elements.cardIdealPrice) elements.cardIdealPrice.classList.remove('active');
     if (elements.tagIdealActive) elements.tagIdealActive.style.display = 'none';
 
+    // Reseta Donut, Matriz e Promoção para o estado de espera
+    renderDonutChart(null, 0, false);
     renderMultiChannelMatrix(0, false);
+    updatePromoCalculation(0, null, false);
 
     if (elements.mobileStickyBar) {
       if (elements.mobileProfitVal) {
@@ -364,7 +460,7 @@ function updateCalculations() {
         elements.mobileProfitVal.style.color = 'var(--text-muted)';
       }
       if (elements.mobileMarginBadge) {
-        elements.mobileMarginBadge.textContent = '0,0%';
+        elements.mobileMarginBadge.textContent = '0.0%';
         elements.mobileMarginBadge.style.color = 'var(--text-muted)';
       }
     }
@@ -394,39 +490,167 @@ function updateCalculations() {
   // Calcula comissão, taxas fixas, frete, imposto e lucro líquido
   const result = engine.computeCostsForPrice(effectivePrice, kitInputs);
 
-  // 1. Atualiza Hero Box (Preço de Venda do Anúncio & Lucro Líquido no Bolso)
+  if (elements.detCard) elements.detCard.classList.remove('is-zeroed');
+
+  // 1. Atualiza Preço de Venda
   if (elements.resultSalePrice) {
     elements.resultSalePrice.textContent = engine.formatCurrency(effectivePrice);
   }
 
+  // 2. Cálculo dos 5 nós da Cascata de Deduções (Idêntico ao demonstrativo financeiro real)
+  // a) Taxa marketplace + frete
+  const taxaCost = result.marketplaceFee + result.shippingCost;
+  const taxaPct = effectivePrice > 0 ? (taxaCost / effectivePrice) * 100 : 0;
+  const bal1 = Math.max(0, effectivePrice - taxaCost);
+
+  // b) Imposto
+  const impostoCost = result.taxesCost;
+  const impostoPct = effectivePrice > 0 ? (impostoCost / effectivePrice) * 100 : 0;
+  const bal2 = Math.max(0, bal1 - impostoCost);
+
+  // c) Energia elétrica
+  const energiaCost = result.electricityCost;
+  const energiaPct = effectivePrice > 0 ? (energiaCost / effectivePrice) * 100 : 0;
+  const bal3 = Math.max(0, bal2 - energiaCost);
+
+  // d) Filamento
+  const filamentoCost = result.filamentCost;
+  const filamentoPct = effectivePrice > 0 ? (filamentoCost / effectivePrice) * 100 : 0;
+  const bal4 = Math.max(0, bal3 - filamentoCost);
+
+  // e) Embalagem (+ insumos e depreciação)
+  const embalagemCost = result.packagingCost + result.insumosCost + result.depreciationCost;
+  const embalagemPct = effectivePrice > 0 ? (embalagemCost / effectivePrice) * 100 : 0;
+  const bal5 = bal4 - embalagemCost; // exatamente igual a result.netProfit
+
+  // Preenche os nós visuais da cascata
+  if (elements.detTaxaDeduction) elements.detTaxaDeduction.textContent = `- ${engine.formatCurrency(taxaCost)}`;
+  if (elements.detTaxaPercent) elements.detTaxaPercent.textContent = `${taxaPct.toFixed(1)}%`;
+  if (elements.detTaxaBalance) elements.detTaxaBalance.textContent = `= ${engine.formatCurrency(bal1)}`;
+
+  if (elements.detImpostoDeduction) elements.detImpostoDeduction.textContent = `- ${engine.formatCurrency(impostoCost)}`;
+  if (elements.detImpostoPercent) elements.detImpostoPercent.textContent = `${impostoPct.toFixed(1)}%`;
+  if (elements.detImpostoBalance) elements.detImpostoBalance.textContent = `= ${engine.formatCurrency(bal2)}`;
+
+  if (elements.detEnergiaDeduction) elements.detEnergiaDeduction.textContent = `- ${engine.formatCurrency(energiaCost)}`;
+  if (elements.detEnergiaPercent) elements.detEnergiaPercent.textContent = `${energiaPct.toFixed(1)}%`;
+  if (elements.detEnergiaBalance) elements.detEnergiaBalance.textContent = `= ${engine.formatCurrency(bal3)}`;
+
+  if (elements.detFilamentoDeduction) elements.detFilamentoDeduction.textContent = `- ${engine.formatCurrency(filamentoCost)}`;
+  if (elements.detFilamentoPercent) elements.detFilamentoPercent.textContent = `${filamentoPct.toFixed(1)}%`;
+  if (elements.detFilamentoBalance) elements.detFilamentoBalance.textContent = `= ${engine.formatCurrency(bal4)}`;
+
+  if (elements.detEmbalagemDeduction) elements.detEmbalagemDeduction.textContent = `- ${engine.formatCurrency(embalagemCost)}`;
+  if (elements.detEmbalagemPercent) elements.detEmbalagemPercent.textContent = `${embalagemPct.toFixed(1)}%`;
+  if (elements.detEmbalagemBalance) elements.detEmbalagemBalance.textContent = `= ${engine.formatCurrency(bal5)}`;
+
+  // 3. Total de custos e Energia + Filamento
+  if (elements.detTotalCustos) elements.detTotalCustos.textContent = engine.formatCurrency(result.totalDeductions);
+  if (elements.detEnergiaFilamento) elements.detEnergiaFilamento.textContent = engine.formatCurrency(energiaCost + filamentoCost);
+
+  // 4. Lucro Líquido Limpo
   if (elements.netProfitBig) {
     elements.netProfitBig.textContent = engine.formatCurrency(result.netProfit);
-    elements.netProfitBig.style.color = result.netProfit >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+    elements.netProfitBig.style.color = result.netProfit >= 0 ? '#00e5a0' : 'var(--accent-red)';
   }
 
   if (elements.netMarginBig) {
-    elements.netMarginBig.textContent = `${engine.formatPercent(result.netMarginPercent)} de margem real`;
-    elements.netMarginBig.style.color = result.netProfit >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+    elements.netMarginBig.textContent = `${result.netMarginPercent.toFixed(1)}%`;
+    elements.netMarginBig.style.color = result.netProfit >= 0 ? '#00e5a0' : 'var(--accent-red)';
   }
 
-  const marginClass = engine.getMarginClassification(result.netMarginPercent);
+  // Badge de classificação com cores refinadas
   if (elements.marginBadge) {
-    elements.marginBadge.textContent = marginClass.label;
-    elements.marginBadge.style.color = marginClass.color;
-    elements.marginBadge.style.backgroundColor = marginClass.bg;
+    if (result.netMarginPercent >= 45) {
+      elements.marginBadge.textContent = 'Excelente';
+      elements.marginBadge.style.color = '#00e5a0';
+      elements.marginBadge.style.backgroundColor = 'rgba(0, 229, 160, 0.18)';
+    } else if (result.netMarginPercent >= 25) {
+      elements.marginBadge.textContent = 'Boa';
+      elements.marginBadge.style.color = '#eab308';
+      elements.marginBadge.style.backgroundColor = 'rgba(234, 179, 8, 0.2)';
+    } else if (result.netMarginPercent >= 10) {
+      elements.marginBadge.textContent = 'Atenção';
+      elements.marginBadge.style.color = '#ffb020';
+      elements.marginBadge.style.backgroundColor = 'rgba(255, 176, 32, 0.2)';
+    } else if (result.netMarginPercent > 0) {
+      elements.marginBadge.textContent = 'Crítica';
+      elements.marginBadge.style.color = '#ff3f5e';
+      elements.marginBadge.style.backgroundColor = 'rgba(255, 63, 94, 0.2)';
+    } else {
+      elements.marginBadge.textContent = 'Prejuízo';
+      elements.marginBadge.style.color = '#ff3f5e';
+      elements.marginBadge.style.backgroundColor = 'rgba(255, 63, 94, 0.3)';
+    }
   }
 
-  // 2. Decomposição em 1 Linha (Fabricação + Taxas Canal = Sobra Líquido)
+  // Lucro por hora de impressão
+  const totalHours = result.totalHours || Math.max(0.1, (state.printHours || 0) + (state.printMinutes || 0) / 60);
+  const hourlyProfit = totalHours > 0 ? (result.netProfit / totalHours) : 0;
+  if (elements.detLucroHourly) {
+    elements.detLucroHourly.textContent = `${engine.formatCurrency(hourlyProfit)}/hora`;
+  }
+
+  // 5. Capacidade Produtiva (20h / 30d)
+  const capacity = engine.calculateProductionCapacity(result.netProfit, effectivePrice, totalHours, 20);
+  if (elements.detCapDiario) {
+    elements.detCapDiario.textContent = engine.formatCurrency(capacity.dailyProfit);
+  }
+  if (elements.detCapMensal) {
+    elements.detCapMensal.textContent = engine.formatCurrency(capacity.monthlyProfit);
+  }
+
+  // 6. Detalhe do Canal Selecionado
+  const mpKey = state.marketplaceKey;
+  if (mpKey === 'shopee_fge' || mpKey === 'shopee_padrao') {
+    const mp = MARKETPLACE_CONFIG[mpKey];
+    if (elements.detChannelHeader) elements.detChannelHeader.textContent = 'DETALHE SHOPEE';
+    const commRate = mp.commissionPercent;
+    const rawComm = Math.min(effectivePrice * (commRate / 100), mp.commissionCap);
+    const fixedFee = mp.fixedFee + (state.isCpfShopee ? mp.cpfExtraFee : 0);
+    if (elements.detChannelRow1Label) elements.detChannelRow1Label.textContent = `Comissão (${commRate.toFixed(1)}%)`;
+    if (elements.detChannelRow1Val) elements.detChannelRow1Val.textContent = engine.formatCurrency(rawComm);
+    if (elements.detChannelRow2Label) elements.detChannelRow2Label.textContent = 'Taxa fixa';
+    if (elements.detChannelRow2Val) elements.detChannelRow2Val.textContent = engine.formatCurrency(fixedFee);
+  } else if (mpKey === 'ml_premium' || mpKey === 'ml_classico') {
+    const mp = MARKETPLACE_CONFIG[mpKey];
+    if (elements.detChannelHeader) elements.detChannelHeader.textContent = 'DETALHE MERCADO LIVRE';
+    const commRate = mp.commissionPercent;
+    const rawComm = effectivePrice * (commRate / 100);
+    if (elements.detChannelRow1Label) elements.detChannelRow1Label.textContent = `Comissão (${commRate.toFixed(1)}%)`;
+    if (elements.detChannelRow1Val) elements.detChannelRow1Val.textContent = engine.formatCurrency(rawComm);
+    if (elements.detChannelRow2Label) elements.detChannelRow2Label.textContent = 'Frete / Taxa Fixa';
+    if (elements.detChannelRow2Val) elements.detChannelRow2Val.textContent = engine.formatCurrency(result.shippingCost);
+  } else if (mpKey === 'tiktok_shop') {
+    if (elements.detChannelHeader) elements.detChannelHeader.textContent = 'DETALHE TIKTOK SHOP';
+    const rawComm = effectivePrice * 0.14;
+    if (elements.detChannelRow1Label) elements.detChannelRow1Label.textContent = 'Comissão (14.0%)';
+    if (elements.detChannelRow1Val) elements.detChannelRow1Val.textContent = engine.formatCurrency(rawComm);
+    if (elements.detChannelRow2Label) elements.detChannelRow2Label.textContent = 'Taxa fixa';
+    if (elements.detChannelRow2Val) elements.detChannelRow2Val.textContent = engine.formatCurrency(4.00);
+  } else if (mpKey === 'venda_direta') {
+    if (elements.detChannelHeader) elements.detChannelHeader.textContent = 'DETALHE VENDA FÍSICA';
+    if (state.paymentMethodDirect === 'card') {
+      if (elements.detChannelRow1Label) elements.detChannelRow1Label.textContent = `Taxa Cartão (${state.cardFeePercentDirect}%)`;
+      if (elements.detChannelRow1Val) elements.detChannelRow1Val.textContent = engine.formatCurrency(result.marketplaceFee);
+    } else {
+      if (elements.detChannelRow1Label) elements.detChannelRow1Label.textContent = 'Taxa Pix (0%)';
+      if (elements.detChannelRow1Val) elements.detChannelRow1Val.textContent = 'R$ 0,00';
+    }
+    if (elements.detChannelRow2Label) elements.detChannelRow2Label.textContent = 'Frete / Entrega';
+    if (elements.detChannelRow2Val) elements.detChannelRow2Val.textContent = engine.formatCurrency(result.shippingCost);
+  }
+
+  // 7. Helpers de compatibilidade
   if (elements.pricingCostFabricacao) {
     elements.pricingCostFabricacao.textContent = engine.formatCurrency(prodEq.totalProductionCost);
   }
   if (elements.pricingCostTaxas) {
-    const totalTaxas = result.marketplaceFee + result.shippingCost + result.taxesCost;
-    elements.pricingCostTaxas.textContent = engine.formatCurrency(totalTaxas);
+    elements.pricingCostTaxas.textContent = engine.formatCurrency(taxaCost + impostoCost);
   }
   if (elements.pricingLucroResumo) {
     elements.pricingLucroResumo.textContent = engine.formatCurrency(result.netProfit);
-    elements.pricingLucroResumo.style.color = result.netProfit >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+    elements.pricingLucroResumo.style.color = result.netProfit >= 0 ? '#00e5a0' : 'var(--accent-red)';
   }
 
   // 3. Sincroniza atalhos de Margem (%)
@@ -464,10 +688,16 @@ function updateCalculations() {
     }
   }
 
-  // 7. Comparativo Multicanal Completo (Passo 4)
+  // 7. Gráfico Donut SVG de Composição de Custos (Passo 4)
+  renderDonutChart(result, effectivePrice, true);
+
+  // 8. Comparativo Multicanal Completo (Passo 5)
   renderMultiChannelMatrix(effectivePrice, true, kitInputs);
 
-  // 8. Barra Mobile Flutuante
+  // 9. Estratégia de Promoção com Lucro Preservado (Passo 6)
+  updatePromoCalculation(effectivePrice, result, true);
+
+  // 10. Barra Mobile Flutuante
   if (elements.mobileStickyBar) {
     const mp = MARKETPLACE_CONFIG[state.marketplaceKey];
     if (elements.mobileChannelTag) elements.mobileChannelTag.textContent = mp ? (mp.subTag || mp.tag) : 'Ativo';
@@ -558,6 +788,220 @@ function renderMultiChannelMatrix(currentPrice, isActive = true, activeInputs = 
   });
 }
 
+// Renderiza o gráfico Donut Chart SVG interativo (Passo 4)
+function renderDonutChart(result, effectivePrice, isActive = true) {
+  if (!elements.donutSvg) return;
+
+  if (!isActive || !result || effectivePrice <= 0) {
+    elements.donutSvg.innerHTML = `
+      <circle cx="100" cy="100" r="66" fill="none" stroke="rgba(255, 255, 255, 0.08)" stroke-width="26" stroke-dasharray="6 6" />
+    `;
+    if (elements.donutCenterVal) {
+      elements.donutCenterVal.textContent = 'R$ 0,00';
+      elements.donutCenterVal.style.color = 'var(--text-muted)';
+    }
+    if (elements.donutCenterLbl) {
+      elements.donutCenterLbl.textContent = 'Aguardando';
+    }
+    if (elements.donutLegend) {
+      elements.donutLegend.innerHTML = `
+        <span style="font-size: 11.5px; color: var(--text-dim); text-align: center; padding: 12px; width: 100%;">
+          Preencha o peso e tempo da peça para gerar o raio-x com valores em R$ e porcentagens.
+        </span>
+      `;
+    }
+    if (elements.donutBadgeStatus) {
+      elements.donutBadgeStatus.textContent = 'Aguardando';
+      elements.donutBadgeStatus.style.color = 'var(--text-dim)';
+    }
+    return;
+  }
+
+  const rawProfit = result.netProfit;
+  const isLoss = rawProfit < 0;
+
+  if (elements.donutBadgeStatus) {
+    elements.donutBadgeStatus.textContent = `${engine.formatPercent(result.netMarginPercent)} Margem`;
+    elements.donutBadgeStatus.style.color = isLoss ? 'var(--accent-red)' : 'var(--accent-green)';
+  }
+
+  // Segmentos de custo reais
+  const segments = [
+    { id: 'profit', name: isLoss ? 'Prejuízo' : 'Lucro Líquido', val: isLoss ? Math.abs(rawProfit) : rawProfit, color: isLoss ? '#ff3f5e' : '#00e5a0' },
+    { id: 'marketplace', name: 'Taxa Marketplace', val: result.marketplaceFee, color: '#f59e0b' },
+    { id: 'shipping', name: 'Frete / Taxa Fixa', val: result.shippingCost, color: '#818cf8' },
+    { id: 'taxes', name: 'Impostos', val: result.taxesCost, color: '#f43f5e' },
+    { id: 'filament', name: 'Filamento', val: result.filamentCost, color: '#ec4899' },
+    { id: 'electricity', name: 'Energia Elétrica', val: result.electricityCost, color: '#00f2fe' },
+    { id: 'packaging', name: 'Embalagem & Outros', val: result.packagingCost + result.insumosCost + result.depreciationCost, color: '#c084fc' }
+  ].filter(s => s.val > 0.005);
+
+  const totalVal = segments.reduce((sum, s) => sum + s.val, 0) || 1;
+
+  segments.forEach(s => {
+    s.pct = (s.val / totalVal) * 100;
+  });
+
+  const cx = 100, cy = 100, R = 78, r = 52;
+  let accumAngle = 0;
+
+  const pathsHtml = segments.map(seg => {
+    const sliceAngle = (seg.val / totalVal) * 360;
+    const a0 = accumAngle;
+    const a1 = accumAngle + sliceAngle;
+    accumAngle += sliceAngle;
+
+    if (sliceAngle >= 359.9) {
+      return `
+        <circle class="donut-slice" cx="${cx}" cy="${cy}" r="${(R + r) / 2}" 
+          fill="none" stroke="${seg.color}" stroke-width="${R - r}" 
+          data-seg-id="${seg.id}" data-seg-val="${seg.val}" data-seg-name="${seg.name}" data-seg-pct="${seg.pct.toFixed(1)}">
+        </circle>
+      `;
+    }
+
+    const rad0 = (a0 - 90) * (Math.PI / 180);
+    const rad1 = (a1 - 90) * (Math.PI / 180);
+
+    const ox1 = cx + R * Math.cos(rad0);
+    const oy1 = cy + R * Math.sin(rad0);
+    const ox2 = cx + R * Math.cos(rad1);
+    const oy2 = cy + R * Math.sin(rad1);
+
+    const ix1 = cx + r * Math.cos(rad0);
+    const iy1 = cy + r * Math.sin(rad0);
+    const ix2 = cx + r * Math.cos(rad1);
+    const iy2 = cy + r * Math.sin(rad1);
+
+    const largeArc = sliceAngle > 180 ? 1 : 0;
+    const d = `M ${ox1} ${oy1} A ${R} ${R} 0 ${largeArc} 1 ${ox2} ${oy2} L ${ix2} ${iy2} A ${r} ${r} 0 ${largeArc} 0 ${ix1} ${iy1} Z`;
+
+    return `
+      <path class="donut-slice" d="${d}" fill="${seg.color}" 
+        stroke="var(--bg-card-sub)" stroke-width="2"
+        data-seg-id="${seg.id}" data-seg-val="${seg.val}" data-seg-name="${seg.name}" data-seg-pct="${seg.pct.toFixed(1)}">
+      </path>
+    `;
+  }).join('');
+
+  elements.donutSvg.innerHTML = pathsHtml;
+
+  const resetCenter = () => {
+    if (elements.donutCenterVal) {
+      elements.donutCenterVal.textContent = engine.formatCurrency(isLoss ? rawProfit : result.netProfit);
+      elements.donutCenterVal.style.color = isLoss ? 'var(--accent-red)' : 'var(--accent-green)';
+    }
+    if (elements.donutCenterLbl) {
+      elements.donutCenterLbl.textContent = `${engine.formatPercent(result.netMarginPercent)} Lucro`;
+    }
+    document.querySelectorAll('.donut-legend-item').forEach(el => el.classList.remove('highlighted'));
+  };
+
+  resetCenter();
+
+  // Renderiza Legenda com PREÇO (R$) e PORCENTAGEM (%)
+  if (elements.donutLegend) {
+    elements.donutLegend.innerHTML = segments.map(seg => `
+      <div class="donut-legend-item" data-legend-id="${seg.id}" data-seg-name="${seg.name}" data-seg-val="${seg.val}" data-seg-pct="${seg.pct.toFixed(1)}">
+        <div class="donut-legend-left">
+          <span class="donut-legend-dot" style="background: ${seg.color}"></span>
+          <span class="donut-legend-name">${seg.name}</span>
+        </div>
+        <div class="donut-legend-right">
+          <strong class="donut-legend-val mono">${engine.formatCurrency(seg.val)}</strong>
+          <span class="donut-legend-pct mono">(${seg.pct.toFixed(1)}%)</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Interatividade Hover nas fatias
+  elements.donutSvg.querySelectorAll('.donut-slice').forEach(slice => {
+    slice.addEventListener('mouseenter', () => {
+      const name = slice.getAttribute('data-seg-name');
+      const val = parseFloat(slice.getAttribute('data-seg-val'));
+      const pct = slice.getAttribute('data-seg-pct');
+      const id = slice.getAttribute('data-seg-id');
+
+      if (elements.donutCenterVal) {
+        elements.donutCenterVal.textContent = engine.formatCurrency(val);
+        elements.donutCenterVal.style.color = slice.getAttribute('fill') || 'var(--text-main)';
+      }
+      if (elements.donutCenterLbl) {
+        elements.donutCenterLbl.textContent = `${name} (${pct}%)`;
+      }
+
+      document.querySelectorAll('.donut-legend-item').forEach(leg => {
+        if (leg.getAttribute('data-legend-id') === id) leg.classList.add('highlighted');
+        else leg.classList.remove('highlighted');
+      });
+    });
+
+    slice.addEventListener('mouseleave', resetCenter);
+  });
+
+  // Interatividade Hover nos itens da Legenda
+  if (elements.donutLegend) {
+    elements.donutLegend.querySelectorAll('.donut-legend-item').forEach(leg => {
+      leg.addEventListener('mouseenter', () => {
+        const id = leg.getAttribute('data-legend-id');
+        const name = leg.getAttribute('data-seg-name');
+        const val = parseFloat(leg.getAttribute('data-seg-val'));
+        const pct = leg.getAttribute('data-seg-pct');
+
+        const targetSlice = elements.donutSvg.querySelector(`[data-seg-id="${id}"]`);
+        if (targetSlice) {
+          targetSlice.style.transform = 'scale(1.06)';
+          targetSlice.style.filter = 'drop-shadow(0 0 10px currentColor)';
+        }
+
+        if (elements.donutCenterVal) {
+          elements.donutCenterVal.textContent = engine.formatCurrency(val);
+          elements.donutCenterVal.style.color = targetSlice?.getAttribute('fill') || 'var(--text-main)';
+        }
+        if (elements.donutCenterLbl) {
+          elements.donutCenterLbl.textContent = `${name} (${pct}%)`;
+        }
+
+        document.querySelectorAll('.donut-legend-item').forEach(l => l.classList.remove('highlighted'));
+        leg.classList.add('highlighted');
+      });
+
+      leg.addEventListener('mouseleave', () => {
+        const id = leg.getAttribute('data-legend-id');
+        const targetSlice = elements.donutSvg.querySelector(`[data-seg-id="${id}"]`);
+        if (targetSlice) {
+          targetSlice.style.transform = '';
+          targetSlice.style.filter = '';
+        }
+        resetCenter();
+      });
+    });
+  }
+}
+
+// Atualiza o simulador de promoção com lucro preservado (Passo 6)
+function updatePromoCalculation(effectivePrice, result, isActive = true) {
+  if (!elements.promoAnnouncedPrice || !elements.promoCustomerPays) return;
+
+  if (!isActive || !result || effectivePrice <= 0) {
+    elements.promoAnnouncedPrice.textContent = 'R$ 0,00';
+    elements.promoCustomerPays.textContent = 'R$ 0,00';
+    if (elements.promoTagline) {
+      elements.promoTagline.textContent = '💜 Preencha os dados da peça para calcular a estratégia de desconto.';
+    }
+    return;
+  }
+
+  const promo = engine.calculatePromotion(effectivePrice, state.promoDiscountPercent || 10);
+  elements.promoAnnouncedPrice.textContent = engine.formatCurrency(promo.announcedPrice);
+  elements.promoCustomerPays.textContent = engine.formatCurrency(promo.customerPays);
+
+  if (elements.promoTagline) {
+    elements.promoTagline.textContent = `💜 ${promo.discountPercent}% de desconto na campanha · Seu lucro de ${engine.formatCurrency(result.netProfit)} continua 100% garantido no seu bolso!`;
+  }
+}
+
 // Altera o marketplace ativo
 function setMarketplace(key) {
   state.marketplaceKey = key;
@@ -575,21 +1019,25 @@ function setMarketplace(key) {
 
   // Mostra/Oculta sub-opções
   if (key === 'ml_premium' || key === 'ml_classico') {
-    if (elements.mlSubOptions) elements.mlSubOptions.style.display = 'flex';
+    if (elements.mlSubOptions) elements.mlSubOptions.style.display = 'block';
     if (elements.shopeeSubOptions) elements.shopeeSubOptions.style.display = 'none';
     if (elements.diretaSubOptions) elements.diretaSubOptions.style.display = 'none';
     const radio = document.querySelector(`input[name="ml-tier"][value="${key}"]`);
     if (radio) radio.checked = true;
   } else if (key === 'shopee_fge' || key === 'shopee_padrao') {
     if (elements.mlSubOptions) elements.mlSubOptions.style.display = 'none';
-    if (elements.shopeeSubOptions) elements.shopeeSubOptions.style.display = 'flex';
+    if (elements.shopeeSubOptions) elements.shopeeSubOptions.style.display = 'block';
     if (elements.diretaSubOptions) elements.diretaSubOptions.style.display = 'none';
     const radio = document.querySelector(`input[name="shopee-tier"][value="${key}"]`);
     if (radio) radio.checked = true;
+    if (elements.shopeeCpfToggle) elements.shopeeCpfToggle.checked = Boolean(state.isCpfShopee);
   } else if (key === 'venda_direta') {
     if (elements.mlSubOptions) elements.mlSubOptions.style.display = 'none';
     if (elements.shopeeSubOptions) elements.shopeeSubOptions.style.display = 'none';
-    if (elements.diretaSubOptions) elements.diretaSubOptions.style.display = 'flex';
+    if (elements.diretaSubOptions) elements.diretaSubOptions.style.display = 'block';
+    if (elements.diretaCardFeeBox) {
+      elements.diretaCardFeeBox.style.display = state.paymentMethodDirect === 'card' ? 'flex' : 'none';
+    }
   } else {
     // tiktok_shop
     if (elements.mlSubOptions) elements.mlSubOptions.style.display = 'none';
@@ -635,13 +1083,14 @@ async function handleGCodeFile(file) {
       if (meta.printerModel) {
         const lower = meta.printerModel.toLowerCase();
         let matchId = null;
-        if (lower.includes('a1 mini')) matchId = 'bambu_a1_mini';
-        else if (lower.includes('a1')) matchId = 'bambu_a1';
-        else if (lower.includes('p1p')) matchId = 'bambu_p1p';
-        else if (lower.includes('p1s')) matchId = 'bambu_p1s';
-        else if (lower.includes('x1')) matchId = 'bambu_x1c';
-        else if (lower.includes('k1')) matchId = 'creality_k1';
-        else if (lower.includes('ender')) matchId = 'ender3';
+        if (lower.includes('a1 mini')) matchId = 'bambu-a1-mini';
+        else if (lower.includes('a1')) matchId = 'bambu-a1';
+        else if (lower.includes('p1p')) matchId = 'bambu-p1p';
+        else if (lower.includes('p1s')) matchId = 'bambu-p1s';
+        else if (lower.includes('x1')) matchId = 'bambu-x1c';
+        else if (lower.includes('k1')) matchId = 'creality-k1';
+        else if (lower.includes('ender')) matchId = 'creality-ender3';
+        else if (lower.includes('neptune')) matchId = 'neptune-4';
         if (matchId && elements.printerSelect) {
           elements.printerSelect.value = matchId;
           const prof = PRINTER_PROFILES.find(p => p.id === matchId);
@@ -727,6 +1176,11 @@ function resetCalculation() {
   state.quantity = 1;
   state.targetMargin = 50.0;
 
+  state.isCpfShopee = false;
+  state.customShipping = null;
+  state.promoDiscountPercent = 10.0;
+  state.cardFeePercentDirect = 3.5;
+
   if (elements.productNameInput) elements.productNameInput.value = '';
   if (elements.salePriceInput) elements.salePriceInput.value = '';
   if (elements.targetMarginInput) elements.targetMarginInput.value = '50';
@@ -735,6 +1189,11 @@ function resetCalculation() {
   if (elements.weightInput) elements.weightInput.value = '';
   if (elements.batchQtyInput) elements.batchQtyInput.value = 1;
   if (elements.gcodeFileInput) elements.gcodeFileInput.value = '';
+
+  if (elements.shopeeCpfToggle) elements.shopeeCpfToggle.checked = false;
+  if (elements.mlCustomShippingInput) elements.mlCustomShippingInput.value = '';
+  if (elements.cardFeeInput) elements.cardFeeInput.value = '3.5';
+  if (elements.promoDiscountInput) elements.promoDiscountInput.value = '10';
 
   if (elements.dropzoneStatus) elements.dropzoneStatus.style.display = 'none';
   if (elements.dropzoneTip) elements.dropzoneTip.style.display = 'none';
@@ -843,6 +1302,19 @@ function loadCalculation(id) {
   if (elements.taxPercentInput) elements.taxPercentInput.value = state.taxPercent;
   if (elements.batchQtyInput) elements.batchQtyInput.value = state.quantity || 1;
 
+  if (elements.shopeeCpfToggle) {
+    elements.shopeeCpfToggle.checked = Boolean(state.isCpfShopee);
+  }
+  if (elements.mlCustomShippingInput) {
+    elements.mlCustomShippingInput.value = state.customShipping !== null && state.customShipping !== undefined ? state.customShipping : '';
+  }
+  if (elements.cardFeeInput) {
+    elements.cardFeeInput.value = state.cardFeePercentDirect || 3.5;
+  }
+  if (elements.promoDiscountInput) {
+    elements.promoDiscountInput.value = state.promoDiscountPercent || 10;
+  }
+
   if (state.calcMode === 'price' && elements.modePriceBtn) {
     elements.modePriceBtn.click();
   } else if (elements.modeMarginBtn) {
@@ -937,9 +1409,64 @@ function setupEventListeners() {
   document.querySelectorAll('input[name="direta-tier"]').forEach(radio => {
     radio.addEventListener('change', (e) => {
       state.paymentMethodDirect = e.target.value;
+      if (elements.diretaCardFeeBox) {
+        elements.diretaCardFeeBox.style.display = e.target.value === 'card' ? 'flex' : 'none';
+      }
       updateCalculations();
     });
   });
+
+  // Checkbox Shopee CPF
+  if (elements.shopeeCpfToggle) {
+    elements.shopeeCpfToggle.addEventListener('change', (e) => {
+      state.isCpfShopee = e.target.checked;
+      updateCalculations();
+      if (state.isCpfShopee) {
+        showToast('Taxa de CPF da Shopee (+R$ 5,00/item) aplicada.', '🟠');
+      } else {
+        showToast('Taxa de CPF desmarcada (vendedor CNPJ).', '✓');
+      }
+    });
+  }
+
+  // Frete manual ML
+  if (elements.mlCustomShippingInput) {
+    elements.mlCustomShippingInput.addEventListener('input', () => {
+      const v = elements.mlCustomShippingInput.value.trim();
+      state.customShipping = v !== '' ? parseFloat(v) : null;
+      updateCalculations();
+    });
+  }
+
+  // Taxa de maquininha cartão
+  if (elements.cardFeeInput) {
+    elements.cardFeeInput.addEventListener('input', () => {
+      state.cardFeePercentDirect = parseFloat(elements.cardFeeInput.value) || 0;
+      updateCalculations();
+    });
+  }
+
+  // Desconto da promoção
+  if (elements.promoDiscountInput) {
+    elements.promoDiscountInput.addEventListener('input', () => {
+      state.promoDiscountPercent = parseFloat(elements.promoDiscountInput.value) || 0;
+      updateCalculations();
+    });
+  }
+
+  // Pills de desconto da promoção
+  if (elements.promoPills) {
+    elements.promoPills.forEach(pill => {
+      pill.addEventListener('click', (e) => {
+        const disc = parseFloat(e.currentTarget.getAttribute('data-discount'));
+        if (elements.promoDiscountInput) elements.promoDiscountInput.value = disc;
+        state.promoDiscountPercent = disc;
+        elements.promoPills.forEach(p => p.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        updateCalculations();
+      });
+    });
+  }
 
   // Troca de modo Preço vs Margem
   if (elements.modeMarginBtn && elements.modePriceBtn) {
@@ -1160,7 +1687,7 @@ function setupEventListeners() {
   // Mobile Sticky Bar listeners
   if (elements.mobileBtnDetails) {
     elements.mobileBtnDetails.addEventListener('click', () => {
-      const target = elements.pricingHeroResult || elements.matrixBody;
+      const target = document.getElementById('card-donut-breakdown') || elements.pricingHeroResult;
       if (target) {
         target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
@@ -1186,7 +1713,10 @@ function setupEventListeners() {
     elements.insumosInput,
     elements.machineCostInput,
     elements.taxPercentInput,
-    elements.batchQtyInput
+    elements.batchQtyInput,
+    elements.cardFeeInput,
+    elements.mlCustomShippingInput,
+    elements.promoDiscountInput
   ].filter(Boolean);
 
   liveInputs.forEach(input => {
@@ -1202,8 +1732,9 @@ function setupEventListeners() {
     elements.quickResetBtn.addEventListener('click', resetCalculation);
   }
 
-  // Modais de Histórico & Preferências
+  // Modais de Histórico & Preferências & Salvar Cálculo
   if (elements.saveCalcBtn) elements.saveCalcBtn.addEventListener('click', saveCalculation);
+  if (elements.btnSaveDetalhamento) elements.btnSaveDetalhamento.addEventListener('click', saveCalculation);
   if (elements.copySummaryBtn) elements.copySummaryBtn.addEventListener('click', copySummaryToClipboard);
 
   if (elements.historyBtn && elements.historyModal) {

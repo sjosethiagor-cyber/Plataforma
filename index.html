@@ -54,14 +54,11 @@
       <p class="app-subtitle">Taxas reais. Margem real. Do custo de filamento e energia até o lucro no seu bolso.</p>
     </div>
 
-    <!-- Main Grid -->
+    <!-- Main Unified Flow (Uma Coluna Padronizada e Limpa) -->
     <div class="calculator-grid">
       
-      <!-- ================= LEFT COLUMN: PRODUTO & CUSTO REAL ================= -->
-      <div class="calculator-inputs">
-        
-        <!-- CARD 1: DADOS DA PEÇA & CUSTO DE FABRICAÇÃO -->
-        <div class="card card-production-step" id="card-step-production">
+      <!-- PASSO 1: DADOS DA PEÇA & CUSTO DE FABRICAÇÃO -->
+      <div class="card card-production-step" id="card-step-production">
           <div class="card-header">
             <div class="card-title-group">
               <span class="step-badge">1 · A PEÇA & CUSTO DE PRODUÇÃO</span>
@@ -302,16 +299,11 @@
                 <input type="number" id="tax-percent-input" class="form-input" step="0.5" value="6.0">
               </div>
             </div>
-          </div>
         </div>
-
       </div>
 
-      <!-- ================= RIGHT COLUMN: ONDE VENDER & PRECIFICAÇÃO CLARA ================= -->
-      <div class="calculator-results">
-        
-        <!-- CARD 2: ONDE VOCÊ VAI VENDER? -->
-        <div class="card" id="card-step-marketplace">
+      <!-- PASSO 2: ONDE VOCÊ VAI VENDER? -->
+      <div class="card" id="card-step-marketplace">
           <div class="card-header">
             <div class="card-title-group">
               <span class="step-badge">2 · ONDE VOCÊ VAI VENDER?</span>
@@ -393,6 +385,13 @@
                 <span>Clássico (14% + taxas)</span>
               </label>
             </div>
+            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-subtle); width: 100%; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+              <span style="font-size: 11.5px; color: var(--text-dim);">Sobrescrever frete/taxa fixa (opcional):</span>
+              <div class="input-wrapper" style="width: 120px;">
+                <span class="input-prefix" style="font-size: 11px;">R$</span>
+                <input type="number" id="ml-custom-shipping-input" class="form-input has-prefix" step="0.50" min="0" placeholder="Automático" style="padding: 4px 8px; height: 28px; font-size: 12px;">
+              </div>
+            </div>
           </div>
 
           <div id="shopee-sub-options" class="mp-sub-options" style="display: none;">
@@ -406,6 +405,12 @@
                 <span>Padrão (14% + R$ 4)</span>
               </label>
             </div>
+            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-subtle); width: 100%;">
+              <label class="checkbox-label" for="shopee-cpf-toggle" style="font-size: 12px;">
+                <input type="checkbox" id="shopee-cpf-toggle">
+                <span>Vendedor Pessoa Física (CPF) <strong style="color: #ff5722;">(+R$ 5,00 por item)</strong></span>
+              </label>
+            </div>
           </div>
 
           <div id="direta-sub-options" class="mp-sub-options" style="display: none;">
@@ -417,8 +422,17 @@
               </label>
               <label class="radio-label">
                 <input type="radio" name="direta-tier" value="card">
-                <span>Cartão à vista (3,5% taxa)</span>
+                <span>Cartão à vista</span>
               </label>
+            </div>
+            <div id="direta-card-fee-box" style="display: none; align-items: center; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-subtle); width: 100%;">
+              <label for="card-fee-input" style="font-size: 12px; color: var(--text-muted);">
+                Taxa da sua maquininha:
+              </label>
+              <div class="input-wrapper" style="width: 95px;">
+                <input type="number" id="card-fee-input" class="form-input has-suffix" step="0.1" min="0" max="30" value="3.5" style="padding: 4px 8px; height: 28px; font-size: 12px;">
+                <span class="input-suffix">%</span>
+              </div>
             </div>
           </div>
         </div>
@@ -484,35 +498,6 @@
             </div>
           </div>
 
-          <!-- PAINEL DE RESULTADO PRINCIPAL: RESPOSTA DIRETA QUE DÁ SEGURANÇA! -->
-          <div class="pricing-hero-result" id="pricing-hero-result">
-            <div class="pricing-hero-top">
-              <span class="pricing-hero-title">Resultado Financeiro da Venda</span>
-              <span id="margin-badge" class="pricing-hero-badge" style="background: rgba(0, 229, 160, 0.15); color: #00e5a0;">
-                Aguardando Peça
-              </span>
-            </div>
-
-            <div class="pricing-hero-main">
-              <div class="pricing-hero-price-col">
-                <span class="pricing-hero-label">Preço de Venda do Anúncio</span>
-                <div class="pricing-hero-price" id="result-sale-price">R$ 0,00</div>
-              </div>
-
-              <div class="pricing-hero-profit-col">
-                <span class="pricing-hero-label">Lucro Líquido Limpo no Seu Bolso</span>
-                <div class="pricing-hero-profit" id="net-profit-big">R$ 0,00</div>
-                <div class="pricing-hero-margin" id="net-margin-big">0,0% de margem real</div>
-              </div>
-            </div>
-
-            <div class="pricing-hero-breakdown">
-              <span>📦 Custo de Fabricação: <strong id="pricing-cost-fabricacao">R$ 0,00</strong></span>
-              <span>🏷️ Taxas do Canal: <strong id="pricing-cost-taxas">R$ 0,00</strong></span>
-              <span>💰 Sobra Líquido: <strong id="pricing-lucro-resumo" style="color: var(--accent-green);">R$ 0,00</strong></span>
-            </div>
-          </div>
-
           <!-- SUGESTÕES RÁPIDAS DE PREÇO (BOM PREÇO vs PREÇO IDEAL) -->
           <div style="margin-top: 14px;">
             <span style="font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 8px;">
@@ -558,11 +543,208 @@
           </div>
         </div>
 
-        <!-- CARD 4: COMPARATIVO EM TODOS OS CANAIS (SEGURANÇA TOTAL) -->
+        <!-- PASSO 4: DEMONSTRATIVO & DETALHAMENTO DA VENDA -->
+        <div class="card detalhamento-card" id="detalhamento-card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="step-badge" style="color: var(--accent-green);">4 · DEMONSTRATIVO & DETALHAMENTO DA VENDA</span>
+            </div>
+          </div>
+
+            <!-- Preço de Venda -->
+            <div class="detalhamento-sale-row">
+              <div class="detalhamento-sale-label">
+                <span class="tag-icon">🏷️</span> Preço de venda
+              </div>
+              <div class="detalhamento-sale-value mono" id="result-sale-price">R$ 0,00</div>
+            </div>
+
+            <div class="detalhamento-divider"></div>
+
+            <!-- Lista em Cascata de Deduções -->
+            <div class="detalhamento-cascade-list">
+              <!-- Taxa Marketplace -->
+              <div class="cascade-item" id="cascade-row-marketplace">
+                <div class="cascade-main-row">
+                  <span class="cascade-label"><span class="cascade-branch">└─</span> Taxa marketplace</span>
+                  <span class="cascade-deduction negative mono" id="det-taxa-deduction">- R$ 0,00</span>
+                </div>
+                <div class="cascade-sub-row">
+                  <span class="cascade-percent mono" id="det-taxa-percent">0.0%</span>
+                  <span class="cascade-balance mono" id="det-taxa-balance">= R$ 0,00</span>
+                </div>
+              </div>
+
+              <!-- Imposto -->
+              <div class="cascade-item" id="cascade-row-imposto">
+                <div class="cascade-main-row">
+                  <span class="cascade-label"><span class="cascade-branch">└─</span> Imposto</span>
+                  <span class="cascade-deduction negative mono" id="det-imposto-deduction">- R$ 0,00</span>
+                </div>
+                <div class="cascade-sub-row">
+                  <span class="cascade-percent mono" id="det-imposto-percent">0.0%</span>
+                  <span class="cascade-balance mono" id="det-imposto-balance">= R$ 0,00</span>
+                </div>
+              </div>
+
+              <!-- Energia elétrica -->
+              <div class="cascade-item" id="cascade-row-energia">
+                <div class="cascade-main-row">
+                  <span class="cascade-label"><span class="cascade-branch">└─</span> Energia eletrica</span>
+                  <span class="cascade-deduction negative mono" id="det-energia-deduction">- R$ 0,00</span>
+                </div>
+                <div class="cascade-sub-row">
+                  <span class="cascade-percent mono" id="det-energia-percent">0.0%</span>
+                  <span class="cascade-balance mono" id="det-energia-balance">= R$ 0,00</span>
+                </div>
+              </div>
+
+              <!-- Filamento -->
+              <div class="cascade-item" id="cascade-row-filamento">
+                <div class="cascade-main-row">
+                  <span class="cascade-label"><span class="cascade-branch">└─</span> Filamento</span>
+                  <span class="cascade-deduction negative mono" id="det-filamento-deduction">- R$ 0,00</span>
+                </div>
+                <div class="cascade-sub-row">
+                  <span class="cascade-percent mono" id="det-filamento-percent">0.0%</span>
+                  <span class="cascade-balance mono" id="det-filamento-balance">= R$ 0,00</span>
+                </div>
+              </div>
+
+              <!-- Embalagem -->
+              <div class="cascade-item" id="cascade-row-embalagem">
+                <div class="cascade-main-row">
+                  <span class="cascade-label"><span class="cascade-branch">└─</span> Embalagem</span>
+                  <span class="cascade-deduction negative mono" id="det-embalagem-deduction">- R$ 0,00</span>
+                </div>
+                <div class="cascade-sub-row">
+                  <span class="cascade-percent mono" id="det-embalagem-percent">0.0%</span>
+                  <span class="cascade-balance mono" id="det-embalagem-balance">= R$ 0,00</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="detalhamento-divider"></div>
+
+            <!-- Total de Custos -->
+            <div class="detalhamento-costs-summary">
+              <div class="detalhamento-costs-main-row">
+                <span class="costs-label">Total de custos</span>
+                <span class="costs-value negative mono" id="det-total-custos">R$ 0,00</span>
+              </div>
+              <div class="detalhamento-costs-sub-row">
+                <span class="costs-sub-label">Energia + Filamento</span>
+                <span class="costs-sub-value mono" id="det-energia-filamento">R$ 0,00</span>
+              </div>
+            </div>
+
+            <div class="detalhamento-divider"></div>
+
+            <!-- Caixa de Lucro -->
+            <div class="detalhamento-lucro-box" id="det-lucro-box">
+              <div class="detalhamento-lucro-top">
+                <span class="lucro-title">
+                  <svg class="lucro-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                    <polyline points="17 6 23 6 23 12"></polyline>
+                  </svg>
+                  Lucro
+                </span>
+              </div>
+
+              <div class="detalhamento-lucro-main">
+                <div class="detalhamento-lucro-val mono" id="net-profit-big">R$ 0,00</div>
+                <div class="detalhamento-lucro-tags">
+                  <span class="lucro-margin-pct mono" id="net-margin-big">0.0%</span>
+                  <span class="lucro-badge" id="margin-badge">Aguardando</span>
+                </div>
+              </div>
+
+              <div class="detalhamento-lucro-hourly">
+                <span class="hourly-icon">⏱</span>
+                <span class="mono" id="det-lucro-hourly">R$ 0,00/hora</span>
+              </div>
+            </div>
+
+            <!-- Capacidade Produtiva -->
+            <div class="detalhamento-capacity-section">
+              <div class="section-micro-header">CAPACIDADE PRODUTIVA</div>
+              <div class="capacity-row">
+                <span class="capacity-label">📅 Potencial diário (20h)</span>
+                <span class="capacity-value mono" id="det-cap-diario">R$ 0,00</span>
+              </div>
+              <div class="capacity-row">
+                <span class="capacity-label">📅 Potencial mensal (30d)</span>
+                <span class="capacity-value highlight-green mono" id="det-cap-mensal">R$ 0,00</span>
+              </div>
+            </div>
+
+            <!-- Detalhe do Canal -->
+            <div class="detalhamento-channel-section">
+              <div class="section-micro-header" id="det-channel-header">DETALHE SHOPEE</div>
+              <div class="channel-detail-row">
+                <span class="channel-detail-label" id="det-channel-row1-label">Comissão (20.0%)</span>
+                <span class="channel-detail-value mono" id="det-channel-row1-val">R$ 0,00</span>
+              </div>
+              <div class="channel-detail-row">
+                <span class="channel-detail-label" id="det-channel-row2-label">Taxa fixa</span>
+                <span class="channel-detail-value mono" id="det-channel-row2-val">R$ 0,00</span>
+              </div>
+            </div>
+
+            <!-- Botão Salvar Cálculo -->
+            <button type="button" id="btn-save-detalhamento" class="btn-save-detalhamento">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+              </svg>
+              <span>Salvar Cálculo</span>
+            </button>
+
+            <!-- Spans ocultos para compatibilidade com helpers existentes -->
+            <div style="display: none;">
+              <span id="pricing-cost-fabricacao">R$ 0,00</span>
+              <span id="pricing-cost-taxas">R$ 0,00</span>
+              <span id="pricing-lucro-resumo">R$ 0,00</span>
+            </div>
+          </div>
+
+        <!-- PASSO 5: RAIO-X VISUAL & GRÁFICO DE COMPOSIÇÃO DE CUSTOS -->
+        <div class="card" id="card-donut-breakdown">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="step-badge" style="color: var(--accent-purple);">5 · RAIO-X & GRÁFICO DE COMPOSIÇÃO DE CUSTOS</span>
+            </div>
+            <span id="donut-badge-status" class="header-pill-tag" style="font-size: 10px;">Composição Real</span>
+          </div>
+          <p style="font-size: 12px; color: var(--text-dim); margin-bottom: 16px;">
+            Veja exatamente os valores em reais (R$) e porcentagens (%) de cada custo e do lucro:
+          </p>
+
+          <div class="chart-breakdown-card" style="margin-bottom: 0;">
+            <div class="donut-breakdown-layout">
+              <div class="donut-chart-container">
+                <svg id="donut-svg" class="donut-svg" viewBox="0 0 200 200" width="170" height="170">
+                  <!-- Slices gerados dinamicamente via JS -->
+                </svg>
+                <div class="donut-center-info">
+                  <span id="donut-center-val" class="donut-center-val mono">R$ 0,00</span>
+                  <span id="donut-center-lbl" class="donut-center-lbl">Lucro Real</span>
+                </div>
+              </div>
+              <div class="donut-legend" id="donut-legend">
+                <!-- Legenda gerada dinamicamente via JS com R$ e % -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PASSO 6: COMPARATIVO EM TODOS OS CANAIS -->
         <div class="card" id="card-multi-channel">
           <div class="card-header">
             <div class="card-title-group">
-              <span class="step-badge" style="color: var(--accent-blue);">4 · COMPARATIVO DA MESMA PEÇA NOS CANAIS</span>
+              <span class="step-badge" style="color: var(--accent-blue);">6 · COMPARATIVO DA MESMA PEÇA NOS CANAIS</span>
             </div>
           </div>
           <p style="font-size: 12px; color: var(--text-dim); margin-bottom: 12px;">
@@ -588,7 +770,53 @@
           </div>
         </div>
 
-      </div>
+        <!-- PASSO 7: ESTRATÉGIA: PROMOÇÃO COM LUCRO PRESERVADO -->
+        <div class="card card-promo" id="card-promo-section">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="step-badge" style="color: var(--accent-purple);">7 · ESTRATÉGIA: PROMOÇÃO COM LUCRO PRESERVADO</span>
+            </div>
+          </div>
+          <p style="font-size: 12px; color: var(--text-dim); margin-bottom: 12px;">
+            Vai participar de campanhas na Shopee, Mercado Livre ou Black Friday? Calcule por quanto anunciar para dar desconto e garantir exatamente o mesmo lucro líquido no seu bolso:
+          </p>
+
+          <div>
+            <div class="form-group">
+              <label class="form-label" for="promo-discount-input">
+                <span>Porcentagem de Desconto a Ofertar na Campanha</span>
+                <span class="label-hint">Ex: 10%, 15%, 20%</span>
+              </label>
+              <div class="input-wrapper">
+                <input type="number" id="promo-discount-input" class="form-input has-suffix" min="1" max="80" value="10">
+                <span class="input-suffix">% OFF</span>
+              </div>
+              <div class="quick-pills promo-quick-pills">
+                <span style="font-size: 10px; color: var(--text-dim); margin-right: 4px; align-self: center;">Descontos:</span>
+                <button type="button" class="quick-pill promo-pill" data-discount="5">5% OFF</button>
+                <button type="button" class="quick-pill promo-pill active" data-discount="10">10% OFF</button>
+                <button type="button" class="quick-pill promo-pill" data-discount="15">15% OFF</button>
+                <button type="button" class="quick-pill promo-pill" data-discount="20">20% OFF</button>
+                <button type="button" class="quick-pill promo-pill" data-discount="25">25% OFF</button>
+              </div>
+            </div>
+
+            <div class="promo-highlight-box">
+              <div>
+                <div class="promo-val-title">Preço para Anunciar (Preço "De")</div>
+                <div id="promo-announced-price" class="promo-val-num">R$ 0,00</div>
+              </div>
+              <div style="text-align: right;">
+                <div class="promo-val-title">Cliente Paga (Preço "Por")</div>
+                <div id="promo-customer-pays" class="promo-val-num" style="color: #fff;">R$ 0,00</div>
+              </div>
+            </div>
+
+            <div id="promo-tagline" class="promo-tagline">
+              💜 10% de desconto na campanha · Lucro líquido 100% intacto no seu bolso
+            </div>
+          </div>
+        </div>
 
     </div>
   </main>
@@ -670,7 +898,7 @@
     </div>
     <div class="mobile-bar-actions">
       <button type="button" id="mobile-btn-details" class="btn-mobile-details">
-        <span>📊</span> Cascata
+        <span>📊</span> Raio-X
       </button>
       <button type="button" id="mobile-btn-save" class="btn-mobile-save" title="Salvar Peça">
         <span>💾</span> Salvar
