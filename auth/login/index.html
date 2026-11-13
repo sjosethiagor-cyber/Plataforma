@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Entrar | 3DSJ Precificadora</title>
+  <link rel="stylesheet" href="/shared/access.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+</head>
+<body>
+  <div class="bg-glow-green" aria-hidden="true"></div>
+
+  <main class="auth-shell">
+    <div class="auth-split">
+      <!-- Card Central / Esquerda -->
+      <section class="access-card" aria-labelledby="login-heading">
+        <div class="brand-row">
+          <a href="/auth/login" class="brand-logo">3D<span>SJ</span></a>
+          <span class="brand-badge">precificadora automática</span>
+        </div>
+
+        <header class="auth-header">
+          <h1 id="login-heading" class="auth-title"><span>Entrar</span></h1>
+          <p class="auth-subtitle">Acesse sua conta para continuar</p>
+        </header>
+
+        <!-- Caixa tracejada verde: Primeiro Acesso do Comprador -->
+        <button
+          type="button"
+          id="btn-open-first-access"
+          class="dashed-notice"
+          aria-haspopup="dialog"
+        >
+          <span>
+            <span class="dashed-notice-title">Comprou agora? Faça o primeiro acesso</span>
+            <span class="dashed-notice-sub">Sua conta já existe com o e-mail da compra</span>
+          </span>
+          <span class="dashed-notice-arrow" aria-hidden="true">→</span>
+        </button>
+
+        <!-- Abas em pílula -->
+        <div
+          class="pill-tabs"
+          role="tablist"
+          aria-label="Método de acesso"
+          style="margin-top: 18px; margin-bottom: 18px;"
+        >
+          <button
+            type="button"
+            role="tab"
+            id="tab-magic"
+            class="pill-tab"
+            aria-selected="true"
+          >
+            Link mágico
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="tab-password"
+            class="pill-tab"
+            aria-selected="false"
+            tabindex="-1"
+          >
+            Email e senha
+          </button>
+        </div>
+
+        <!-- Painel: Link mágico -->
+        <div id="panel-magic" role="tabpanel" aria-labelledby="tab-magic">
+          <form id="magic-form" novalidate>
+            <div class="field">
+              <label class="field-label" for="magic-email">Email</label>
+              <div class="input-box">
+                <input
+                  type="email"
+                  id="magic-email"
+                  name="email"
+                  class="form-control has-right-icon"
+                  placeholder="seu@email.com"
+                  autocomplete="username"
+                  spellcheck="false"
+                  enterkeyhint="done"
+                  required
+                  data-error="magic-email-error"
+                >
+                <span class="input-icon-right" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="4" width="20" height="16" rx="2"/>
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                  </svg>
+                </span>
+              </div>
+              <span id="magic-email-error" class="field-error"></span>
+            </div>
+
+            <button type="submit" id="btn-send-magic" class="btn-primary btn-full">
+              Enviar link de acesso
+            </button>
+
+            <div id="magic-feedback" class="alert-box" role="status" hidden></div>
+          </form>
+        </div>
+
+        <!-- Painel: Email e senha -->
+        <div id="panel-password" role="tabpanel" aria-labelledby="tab-password" hidden>
+          <form id="password-form" novalidate>
+            <div class="field">
+              <label class="field-label" for="login-email">Email</label>
+              <div class="input-box">
+                <input
+                  type="email"
+                  id="login-email"
+                  name="email"
+                  class="form-control has-right-icon"
+                  placeholder="seu@email.com"
+                  autocomplete="username"
+                  spellcheck="false"
+                  enterkeyhint="next"
+                  required
+                  data-error="login-email-error"
+                >
+                <span class="input-icon-right" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="4" width="20" height="16" rx="2"/>
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                  </svg>
+                </span>
+              </div>
+              <span id="login-email-error" class="field-error"></span>
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="login-password">Senha</label>
+              <div class="input-box">
+                <input
+                  type="password"
+                  id="login-password"
+                  name="password"
+                  class="form-control has-right-icon"
+                  placeholder="Digite sua senha"
+                  autocomplete="current-password"
+                  enterkeyhint="done"
+                  required
+                  data-error="login-password-error"
+                >
+                <button
+                  type="button"
+                  id="toggle-login-password"
+                  class="password-toggle"
+                  aria-pressed="false"
+                  aria-label="Mostrar senha"
+                >
+                  <svg data-eye="open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <svg data-eye="closed" hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+                    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+                    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+                    <line x1="2" y1="2" x2="22" y2="22"/>
+                  </svg>
+                </button>
+              </div>
+              <span id="login-password-error" class="field-error"></span>
+            </div>
+
+            <button type="submit" id="btn-password-login" class="btn-primary btn-full">
+              Entrar
+            </button>
+
+            <div id="password-feedback" class="alert-box" role="status" hidden></div>
+          </form>
+        </div>
+
+        <footer class="auth-footer">
+          Não tem uma conta?
+          <a href="/auth/signup" class="link-green">Criar conta</a>
+        </footer>
+      </section>
+
+      <!-- Animação discreta de impressão 3D camada por camada (somente telas largas) -->
+      <aside class="printer-stage" aria-hidden="true">
+        <div class="printer-canvas-wrap">
+          <svg
+            id="printer-svg"
+            class="printer-svg"
+            viewBox="0 0 520 400"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <defs>
+              <radialGradient id="nozzleGlow" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#19d98b" stop-opacity="0.72"/>
+                <stop offset="45%" stop-color="#19d98b" stop-opacity="0.22"/>
+                <stop offset="100%" stop-color="#19d98b" stop-opacity="0"/>
+              </radialGradient>
+              <linearGradient id="bedSurface" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#0d131b"/>
+                <stop offset="100%" stop-color="#090d14"/>
+              </linearGradient>
+              <linearGradient id="layerShade" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#8da2bd"/>
+                <stop offset="65%" stop-color="#6b809b"/>
+                <stop offset="100%" stop-color="#53667f"/>
+              </linearGradient>
+              <linearGradient id="activeLayerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#19d98b"/>
+                <stop offset="100%" stop-color="#11b372"/>
+              </linearGradient>
+            </defs>
+
+            <!-- Mesa em perspectiva com grid sutil -->
+            <polygon
+              points="70,295 450,295 505,365 15,365"
+              fill="url(#bedSurface)"
+              stroke="#1a2330"
+              stroke-width="1.5"
+            />
+            <g stroke="#182230" stroke-width="1">
+              <!-- Linhas horizontais de perspectiva -->
+              <line x1="58" y1="310" x2="462" y2="310"/>
+              <line x1="45" y1="327" x2="475" y2="327"/>
+              <line x1="31" y1="346" x2="489" y2="346"/>
+              <!-- Linhas de profundidade -->
+              <line x1="125" y1="295" x2="88" y2="365"/>
+              <line x1="190" y1="295" x2="174" y2="365"/>
+              <line x1="260" y1="295" x2="260" y2="365" stroke="#1e2d3f"/>
+              <line x1="330" y1="295" x2="346" y2="365"/>
+              <line x1="395" y1="295" x2="432" y2="365"/>
+            </g>
+
+            <!-- Sombra da peça na mesa -->
+            <ellipse cx="260" cy="322" rx="108" ry="16" fill="#030508" opacity="0.65"/>
+
+            <!-- Camadas da peça 3D renderizadas via JS -->
+            <g id="printer-layers-group"></g>
+
+            <!-- Bico extrusor com brilho verde -->
+            <g id="printer-nozzle-group" transform="translate(260, 74)">
+              <circle cx="0" cy="24" r="34" fill="url(#nozzleGlow)"/>
+              <!-- Bloco do hotend -->
+              <rect x="-12" y="-34" width="24" height="22" rx="4" fill="#131c28" stroke="#243143" stroke-width="1.2"/>
+              <rect x="-7" y="-12" width="14" height="10" rx="2" fill="#1b2737"/>
+              <!-- Ponta do bico -->
+              <polygon points="-5,-2 5,-2 1.5,10 -1.5,10" fill="#19d98b"/>
+              <circle cx="0" cy="11" r="2.6" fill="#9ff7d3"/>
+            </g>
+          </svg>
+        </div>
+
+        <div class="printer-caption">
+          <span id="printer-layer-label">CAMADA 40/40 · Z 8.00MM</span>
+        </div>
+        <div class="printer-caption-bar" style="margin-top: 8px;">
+          <div id="printer-progress-fill" class="printer-caption-fill"></div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- Modal: Primeiro Acesso de Comprador -->
+  <dialog
+    id="first-access-dialog"
+    class="access-dialog"
+    closedby="any"
+    aria-labelledby="first-access-title"
+  >
+    <div class="dialog-head">
+      <div>
+        <span class="section-kicker">PRIMEIRO ACESSO</span>
+        <h2 id="first-access-title" class="dialog-title">Comprou agora?</h2>
+      </div>
+      <button
+        type="button"
+        id="close-first-access"
+        class="dialog-close"
+        aria-label="Fechar janela"
+      >
+        ✕
+      </button>
+    </div>
+
+    <p style="font-size: 13.5px; color: var(--text-muted); line-height: 1.55;">
+      Informe o mesmo e-mail utilizado na sua compra. Se ele já estiver na nossa base de compradores, liberamos seu acesso automaticamente e enviamos seu link de entrada.
+    </p>
+
+    <form id="first-access-form" novalidate>
+      <div class="field">
+        <label class="field-label" for="buyer-email">E-mail da compra</label>
+        <div class="input-box">
+          <input
+            type="email"
+            id="buyer-email"
+            name="email"
+            class="form-control has-right-icon"
+            placeholder="seu@email.com"
+            autocomplete="email"
+            spellcheck="false"
+            enterkeyhint="done"
+            autofocus
+            required
+            data-error="buyer-email-error"
+          >
+          <span class="input-icon-right" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="4" width="20" height="16" rx="2"/>
+              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+            </svg>
+          </span>
+        </div>
+        <span id="buyer-email-error" class="field-error"></span>
+      </div>
+
+      <div id="first-access-feedback" class="alert-box" role="status" hidden></div>
+
+      <div class="dialog-actions" style="margin-top: 16px;">
+        <button type="button" id="cancel-first-access" class="btn-ghost">
+          Cancelar
+        </button>
+        <button type="submit" id="btn-submit-first-access" class="btn-primary">
+          Enviar link de primeiro acesso
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="/auth/login/login.js"></script>
+</body>
+</html>
+

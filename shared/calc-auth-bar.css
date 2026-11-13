@@ -1,0 +1,32 @@
+.nav-user-email {
+  display: inline-flex;
+  align-items: center;
+  max-width: 210px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 6px 11px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle, #1e1e30);
+  color: var(--text-muted, #b4b4d6);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.nav-user-email[hidden],
+#nav-admin-link[hidden],
+#btn-logout[hidden] {
+  display: none;
+}
+
+#nav-admin-link {
+  text-decoration: none;
+}
+
+@media (max-width: 820px) {
+  .nav-user-email {
+    display: none;
+  }
+}
+

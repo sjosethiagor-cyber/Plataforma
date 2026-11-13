@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Validando acesso | 3DSJ Precificadora</title>
+  <link rel="stylesheet" href="/shared/access.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+</head>
+<body>
+  <div class="bg-glow-green" aria-hidden="true"></div>
+
+  <main class="auth-shell">
+    <section class="access-card auth-centered" aria-labelledby="callback-heading">
+      <div class="brand-row">
+        <a href="/auth/login" class="brand-logo">3D<span>SJ</span></a>
+        <span class="brand-badge">precificadora automática</span>
+      </div>
+
+      <header class="auth-header">
+        <h1 id="callback-heading" class="auth-title">
+          Validando <span>acesso</span>
+        </h1>
+        <p id="callback-subtitle" class="auth-subtitle">
+          Conferindo seu link mágico de entrada...
+        </p>
+      </header>
+
+      <div id="callback-error" class="alert-box alert-error" role="alert" hidden></div>
+
+      <div id="callback-actions" style="margin-top: 18px;" hidden>
+        <a href="/auth/login" class="btn-primary btn-full">Voltar para o login</a>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="/auth/callback/callback.js"></script>
+</body>
+</html>
+
