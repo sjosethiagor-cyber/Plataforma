@@ -11,6 +11,7 @@ import {
   isSupabaseConfigured,
   isValidEmail,
   normalizeEmail,
+  upsertAdminAccount,
 } from '../supabase.js';
 
 const router = Router();
@@ -392,10 +393,30 @@ router.post('/login', async (req, res) => {
     }
 
     const supabase = createSupabaseUserClient(req, res);
-    const { data, error } = await supabase.auth.signInWithPassword({
+    let { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+
+    // Se o e-mail já existir no Auth (ex.: login anterior via Google) sem senha definida,
+    // sincroniza a senha configurada em ADMIN_PASSWORD quando o usuário digitar essa mesma senha.
+    if (
+      (error || !data?.user) &&
+      isConfiguredAdminEmail(email) &&
+      process.env.ADMIN_PASSWORD?.trim() &&
+      password === process.env.ADMIN_PASSWORD.trim()
+    ) {
+      await upsertAdminAccount({
+        email,
+        password,
+        nome: process.env.ADMIN_NAME?.trim() || 'Administrador',
+        syncPassword: true,
+      });
+      ({ data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      }));
+    }
 
     if (error || !data?.user) {
       return res.status(401).json({ error: 'E-mail ou senha inválidos.' });

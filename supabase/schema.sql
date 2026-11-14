@@ -111,8 +111,8 @@ $$;
 
 revoke all on function private.handle_new_user() from public, anon, authenticated;
 
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
+drop trigger if exists on_auth_user_created_3dsj on auth.users;
+create trigger on_auth_user_created_3dsj
   after insert on auth.users
   for each row execute procedure private.handle_new_user();
 
