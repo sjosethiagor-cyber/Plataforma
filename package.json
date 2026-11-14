@@ -8,6 +8,7 @@
     "dev": "node server.js",
     "dev:vite-only": "vite --open",
     "build": "vite build",
+    "build:vercel": "vite build && rm -rf server/dist-views && mkdir -p server/dist-views && mv dist/index.html dist/admin dist/auth server/dist-views/",
     "preview": "vite preview",
     "start": "NODE_ENV=production node server.js",
     "serve": "npx serve ."

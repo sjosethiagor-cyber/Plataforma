@@ -87,3 +87,21 @@ npm run build
 npm start
 ```
 
+---
+
+## 6. Deploy na Vercel
+
+O projeto já inclui [`vercel.json`](vercel.json) e [`api/index.js`](api/index.js) configurados para servir os assets estáticos (`dist/assets/*`) via CDN e rotear todas as páginas e APIs (`/`, `/auth/*`, `/admin`, `/api/*`) pelo Express Serverless.
+
+1. No painel da **Vercel → Project Settings → Environment Variables**, configure:
+   - `SUPABASE_URL`
+   - `SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `ADMIN_EMAIL` *(e-mail do administrador inicial)*
+   - `PUBLIC_APP_URL` *(ex.: `https://plataforma-five-xi.vercel.app`)*
+2. No **Supabase → Authentication → URL Configuration**:
+   - **Site URL**: `https://plataforma-five-xi.vercel.app`
+   - **Redirect URLs**: adicione `https://plataforma-five-xi.vercel.app/auth/callback`
+3. Faça **Redeploy** na Vercel (ou `git push` para a branch conectada) para aplicar as variáveis e o roteamento SSR.
+
+

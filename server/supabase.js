@@ -60,16 +60,15 @@ export function createSupabaseUserClient(req, res) {
           return parseCookieHeader(req.headers.cookie ?? '');
         },
         setAll(cookiesToSet) {
+          const isHttps =
+            req.secure || req.headers['x-forwarded-proto'] === 'https';
           cookiesToSet.forEach(({ name, value, options }) => {
             const cookieStr = serializeCookieHeader(name, value, {
               ...options,
               path: options?.path || '/',
               httpOnly: options?.httpOnly ?? true,
               sameSite: options?.sameSite || 'lax',
-              secure:
-                process.env.NODE_ENV === 'production'
-                  ? (options?.secure ?? true)
-                  : false,
+              secure: isHttps ? (options?.secure ?? true) : false,
             });
             res.appendHeader('Set-Cookie', cookieStr);
           });
