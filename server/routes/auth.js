@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   createSupabaseUserClient,
+  ensureConfiguredAdminSeeded,
   ensureProfileForUser,
   getAppUrl,
   getAuthContext,
@@ -376,6 +377,10 @@ router.post('/login', async (req, res) => {
     }
 
     const admin = getSupabaseAdmin();
+    if (isConfiguredAdminEmail(email)) {
+      await ensureConfiguredAdminSeeded(email);
+    }
+
     const { data: preProfile } = await admin
       .from('profiles')
       .select('id, status')

@@ -59,9 +59,10 @@ No painel do Supabase:
 
 Você tem **duas formas** (que funcionam inclusive juntas):
 
-1. **Pela variável de ambiente `ADMIN_EMAIL`** *(recomendado)*:
-   - Defina `ADMIN_EMAIL=seu@email.com` no `.env`.
-   - Ao criar conta em `/auth/signup` ou solicitar link mágico em `/auth/login` com esse e-mail, o sistema promove automaticamente para `role = 'admin'` e `status = 'approved'`.
+1. **Pelas variáveis `ADMIN_EMAIL` e `ADMIN_PASSWORD`** *(recomendado)*:
+   - Defina `ADMIN_EMAIL=seu@email.com` e `ADMIN_PASSWORD=SuaSenhaForte` (mín. 6 caracteres) nas variáveis de ambiente (`.env` ou Vercel).
+   - Ao entrar em `/auth/login` na aba **Email e senha** (ou criar conta em `/auth/signup`), o sistema cria/promove automaticamente a conta como `role = 'admin'` e `status = 'approved'`.
+   - Localmente você também pode rodar: `npm run admin:create -- seu@email.com SuaSenhaForte "Nome"`.
 2. **Pelo primeiro usuário cadastrado**:
    - O trigger SQL `private.handle_new_user()` detecta automaticamente quando `public.profiles` está vazia e cria o **primeiro usuário** com `role = 'admin'` e `status = 'approved'`.
 3. **Promoção manual via SQL** *(caso já existam usuários)*:
@@ -98,7 +99,8 @@ O projeto já inclui [`vercel.json`](vercel.json) e [`api/index.js`](api/index.j
    - `SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `ADMIN_EMAIL` *(e-mail do administrador inicial)*
-   - `PUBLIC_APP_URL` *(ex.: `https://plataforma-five-xi.vercel.app`)*
+   - `ADMIN_PASSWORD` *(opcional: senha inicial do admin para entrar direto na aba "Email e senha")*
+   - `APP_URL` *(ex.: `https://plataforma-five-xi.vercel.app`)*
 2. No **Supabase → Authentication → URL Configuration**:
    - **Site URL**: `https://plataforma-five-xi.vercel.app`
    - **Redirect URLs**: adicione `https://plataforma-five-xi.vercel.app/auth/callback`

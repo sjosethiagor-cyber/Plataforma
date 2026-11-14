@@ -97,9 +97,19 @@ export function isConfiguredAdminEmail(email) {
     .includes(target);
 }
 
+export function getPrimaryAdminEmail() {
+  const configured = process.env.ADMIN_EMAIL || '';
+  return configured
+    .split(',')
+    .map((item) => normalizeEmail(item))
+    .find((item) => isValidEmail(item)) || '';
+}
+
 export function getAppUrl(req) {
-  if (process.env.APP_URL?.trim()) {
-    return process.env.APP_URL.trim().replace(/\/+$/, '');
+  const configuredUrl =
+    process.env.APP_URL?.trim() || process.env.PUBLIC_APP_URL?.trim();
+  if (configuredUrl) {
+    return configuredUrl.replace(/\/+$/, '');
   }
   const proto = req.headers['x-forwarded-proto'] || req.protocol || 'http';
   const host = req.headers['x-forwarded-host'] || req.get('host');
@@ -180,6 +190,156 @@ export async function getAuthContext(req, res) {
 
   const profile = await ensureProfileForUser(data.user);
   return { user: data.user, profile, supabase, configMissing: false };
+}
+
+async function findAuthUserByEmail(admin, targetEmail) {
+  const normalized = normalizeEmail(targetEmail);
+  let page = 1;
+  while (page <= 20) {
+    const { data, error } = await admin.auth.admin.listUsers({
+      page,
+      perPage: 200,
+    });
+    if (error) throw error;
+    const users = data?.users || [];
+    const match = users.find((u) => normalizeEmail(u.email) === normalized);
+    if (match) return match;
+    if (users.length < 200) break;
+    page += 1;
+  }
+  return null;
+}
+
+/**
+ * Cria ou promove um usuário administrador com e-mail e senha no Supabase.
+ */
+export async function upsertAdminAccount({
+  email,
+  password,
+  nome = 'Administrador',
+  syncPassword = false,
+}) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!isValidEmail(normalizedEmail)) {
+    throw new Error('E-mail do administrador inválido.');
+  }
+  if (!password || String(password).length < 6) {
+    throw new Error('A senha do administrador deve ter pelo menos 6 caracteres.');
+  }
+
+  const admin = getSupabaseAdmin();
+  const displayName = String(nome || 'Administrador').trim() || 'Administrador';
+
+  const { data: existingProfile, error: profileErr } = await admin
+    .from('profiles')
+    .select('*')
+    .eq('email', normalizedEmail)
+    .maybeSingle();
+
+  if (profileErr) throw profileErr;
+
+  if (existingProfile) {
+    if (syncPassword) {
+      const { error: updateAuthErr } = await admin.auth.admin.updateUserById(
+        existingProfile.id,
+        {
+          password: String(password),
+          email_confirm: true,
+          user_metadata: { nome: existingProfile.nome || displayName },
+        }
+      );
+      if (updateAuthErr) throw updateAuthErr;
+    }
+
+    const { data: promoted, error: promoteErr } = await admin
+      .from('profiles')
+      .update({
+        role: 'admin',
+        status: 'approved',
+        ...(existingProfile.nome ? {} : { nome: displayName }),
+      })
+      .eq('id', existingProfile.id)
+      .select('*')
+      .single();
+
+    if (promoteErr) throw promoteErr;
+    return { profile: promoted, created: false };
+  }
+
+  const { data: createdData, error: createErr } =
+    await admin.auth.admin.createUser({
+      email: normalizedEmail,
+      password: String(password),
+      email_confirm: true,
+      user_metadata: { nome: displayName },
+    });
+
+  let authUser = createdData?.user || null;
+
+  if (createErr) {
+    authUser = await findAuthUserByEmail(admin, normalizedEmail);
+    if (!authUser) throw createErr;
+    if (syncPassword) {
+      const { error: updateAuthErr } = await admin.auth.admin.updateUserById(
+        authUser.id,
+        {
+          password: String(password),
+          email_confirm: true,
+          user_metadata: { nome: authUser.user_metadata?.nome || displayName },
+        }
+      );
+      if (updateAuthErr) throw updateAuthErr;
+    }
+  }
+
+  await ensureProfileForUser(authUser);
+
+  const { data: finalProfile, error: finalErr } = await admin
+    .from('profiles')
+    .update({
+      role: 'admin',
+      status: 'approved',
+      nome: String(authUser.user_metadata?.nome || displayName).trim() || displayName,
+    })
+    .eq('id', authUser.id)
+    .select('*')
+    .single();
+
+  if (finalErr) throw finalErr;
+  return { profile: finalProfile, created: !createErr };
+}
+
+let seededAdminPromise = null;
+
+/**
+ * Se ADMIN_EMAIL e ADMIN_PASSWORD estiverem definidos no ambiente, garante que
+ * a conta administrativa exista e esteja aprovada no primeiro uso.
+ */
+export async function ensureConfiguredAdminSeeded(targetEmail = '') {
+  if (!isSupabaseConfigured()) return null;
+
+  const adminEmail = getPrimaryAdminEmail();
+  const adminPassword = process.env.ADMIN_PASSWORD?.trim() || '';
+  if (!adminEmail || adminPassword.length < 6) return null;
+
+  if (targetEmail && normalizeEmail(targetEmail) !== adminEmail && !isConfiguredAdminEmail(targetEmail)) {
+    return null;
+  }
+
+  if (!seededAdminPromise) {
+    seededAdminPromise = upsertAdminAccount({
+      email: targetEmail && isConfiguredAdminEmail(targetEmail) ? targetEmail : adminEmail,
+      password: adminPassword,
+      nome: process.env.ADMIN_NAME?.trim() || 'Administrador',
+      syncPassword: false,
+    }).catch((err) => {
+      seededAdminPromise = null;
+      console.warn('Falha ao inicializar administrador padrão:', err.message);
+      return null;
+    });
+  }
+
+  return seededAdminPromise;
 }
 
 function escapeHtml(value) {

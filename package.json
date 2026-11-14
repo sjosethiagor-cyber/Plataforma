@@ -11,7 +11,8 @@
     "build:vercel": "vite build && rm -rf server/dist-views && mkdir -p server/dist-views && mv dist/index.html dist/admin dist/auth server/dist-views/",
     "preview": "vite preview",
     "start": "NODE_ENV=production node server.js",
-    "serve": "npx serve ."
+    "serve": "npx serve .",
+    "admin:create": "node server/scripts/create-admin.js"
   },
   "devDependencies": {
     "vite": "^5.4.11"
