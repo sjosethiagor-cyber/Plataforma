@@ -234,6 +234,13 @@ export async function createApp({ isVercel = false } = {}) {
       if (profile.status !== 'approved') {
         return res.redirect('/auth/pending');
       }
+      const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
+      res.cookie('precificadora_uid', profile.id, {
+        path: '/',
+        httpOnly: false,
+        sameSite: 'lax',
+        secure: isHttps,
+      });
       return renderHtmlPage(req, res, 'index.html');
     } catch (err) {
       console.error('Erro no middleware da calculadora:', err);

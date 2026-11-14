@@ -512,6 +512,7 @@ router.post('/logout', async (req, res) => {
   } catch {
     // Mesmo em falha de rede com Supabase, responde ok para o cliente redirecionar
   }
+  res.clearCookie('precificadora_uid', { path: '/' });
   return res.json({ ok: true });
 });
 

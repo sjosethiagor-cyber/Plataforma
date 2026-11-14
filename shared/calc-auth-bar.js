@@ -25,6 +25,15 @@ async function initCalculatorAuthBar() {
       return;
     }
 
+    try {
+      localStorage.removeItem('precificadora3d_history');
+      if (user.id) {
+        document.cookie = `precificadora_uid=${encodeURIComponent(user.id)}; path=/; SameSite=Lax`;
+      }
+    } catch {
+      // Ignora bloqueio de storage/cookie
+    }
+
     if (emailEl) {
       emailEl.textContent = user.email;
       emailEl.title = user.email;
@@ -45,6 +54,7 @@ async function initCalculatorAuthBar() {
             credentials: 'same-origin',
           });
         } finally {
+          document.cookie = 'precificadora_uid=; path=/; Max-Age=0; SameSite=Lax';
           window.location.assign('/auth/login');
         }
       });

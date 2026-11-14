@@ -35,10 +35,22 @@ const state = {
   batchPackagingType: 'single'
 };
 
-// Histórico de cálculos salvos no localStorage
+// Histórico de cálculos salvos no localStorage (isolado por usuário logado)
+function getHistoryStorageKey() {
+  try {
+    const match = document.cookie.match(/(?:^|;\s*)precificadora_uid=([^;]+)/);
+    const uid = match ? decodeURIComponent(match[1]).trim() : '';
+    return uid ? `precificadora3d_history:${uid}` : 'precificadora3d_history:anon';
+  } catch {
+    return 'precificadora3d_history:anon';
+  }
+}
+
 let savedCalculations = [];
 try {
-  const localHistory = localStorage.getItem('precificadora3d_history');
+  // Remove chave antiga global para que novos usuários sempre iniciem com histórico zerado
+  localStorage.removeItem('precificadora3d_history');
+  const localHistory = localStorage.getItem(getHistoryStorageKey());
   if (localHistory) savedCalculations = JSON.parse(localHistory);
 } catch (e) {
   console.warn('Erro ao carregar histórico:', e);
@@ -1224,7 +1236,7 @@ function saveCalculation() {
 
   savedCalculations.unshift(item);
   try {
-    localStorage.setItem('precificadora3d_history', JSON.stringify(savedCalculations));
+    localStorage.setItem(getHistoryStorageKey(), JSON.stringify(savedCalculations));
   } catch (e) {
     console.warn(e);
   }
@@ -1329,7 +1341,7 @@ function loadCalculation(id) {
 function deleteCalculation(id) {
   savedCalculations = savedCalculations.filter(x => x.id !== id);
   try {
-    localStorage.setItem('precificadora3d_history', JSON.stringify(savedCalculations));
+    localStorage.setItem(getHistoryStorageKey(), JSON.stringify(savedCalculations));
   } catch (e) {
     console.warn(e);
   }
