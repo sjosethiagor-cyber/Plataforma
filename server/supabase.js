@@ -7,8 +7,14 @@ import {
 
 const REQUIRED_ENV = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY'];
 
+function isUnsetOrPlaceholder(value) {
+  const trimmed = String(value || '').trim();
+  if (!trimmed) return true;
+  return /^(COLE_AQUI_|sua-chave-|https:\/\/SEU-PROJETO)/i.test(trimmed);
+}
+
 export function getMissingEnvVars() {
-  return REQUIRED_ENV.filter((key) => !process.env[key]?.trim());
+  return REQUIRED_ENV.filter((key) => isUnsetOrPlaceholder(process.env[key]));
 }
 
 export function isSupabaseConfigured() {
