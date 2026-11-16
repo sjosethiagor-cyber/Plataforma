@@ -5,7 +5,7 @@ import {
   serializeCookieHeader,
 } from '@supabase/ssr';
 
-const REQUIRED_ENV = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY'];
+const REQUIRED_ENV = ['SUPABASE_URL', 'SUPABASE_ANON_KEY'];
 
 function isUnsetOrPlaceholder(value) {
   const trimmed = String(value || '').trim();
@@ -21,6 +21,10 @@ export function isSupabaseConfigured() {
   return getMissingEnvVars().length === 0;
 }
 
+export function isServiceRoleConfigured() {
+  return !isUnsetOrPlaceholder(process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
 let cachedAdminClient = null;
 
 /**
@@ -31,6 +35,9 @@ export function getSupabaseAdmin() {
     throw new Error(
       `Variáveis do Supabase ausentes: ${getMissingEnvVars().join(', ')}`
     );
+  }
+  if (!isServiceRoleConfigured()) {
+    throw new Error('Variável SUPABASE_SERVICE_ROLE_KEY ausente ou não configurada.');
   }
   if (!cachedAdminClient) {
     cachedAdminClient = createClient(
@@ -45,6 +52,11 @@ export function getSupabaseAdmin() {
     );
   }
   return cachedAdminClient;
+}
+
+export function tryGetSupabaseAdmin() {
+  if (!isSupabaseConfigured() || !isServiceRoleConfigured()) return null;
+  return getSupabaseAdmin();
 }
 
 /**
@@ -76,7 +88,7 @@ export function createSupabaseUserClient(req, res) {
               sameSite: options?.sameSite || 'lax',
               secure: isHttps ? (options?.secure ?? true) : false,
             });
-            res.appendHeader('Set-Cookie', cookieStr);
+            res.append('Set-Cookie', cookieStr);
           });
         },
       },
@@ -126,10 +138,33 @@ export function getAppUrl(req) {
  * Garante que um usuário autenticado possua linha em `public.profiles`
  * e sincroniza promoção automática caso corresponda a `ADMIN_EMAIL`.
  */
-export async function ensureProfileForUser(user) {
-  const admin = getSupabaseAdmin();
+export async function ensureProfileForUser(user, userSupabase = null) {
   const email = normalizeEmail(user.email);
   const configuredAdmin = isConfiguredAdminEmail(email);
+  const admin = tryGetSupabaseAdmin();
+
+  if (!admin) {
+    if (!userSupabase) {
+      throw new Error('Cliente Supabase autenticado indisponível para leitura do perfil.');
+    }
+    const { data: existing, error: selectErr } = await userSupabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (selectErr) throw selectErr;
+    if (existing) return existing;
+
+    return {
+      id: user.id,
+      nome: String(user.user_metadata?.nome || '').trim(),
+      email,
+      whatsapp: user.user_metadata?.whatsapp || null,
+      role: 'user',
+      status: 'pending',
+    };
+  }
 
   const { data: existing, error: selectErr } = await admin
     .from('profiles')
@@ -194,7 +229,7 @@ export async function getAuthContext(req, res) {
     return { user: null, profile: null, supabase, configMissing: false };
   }
 
-  const profile = await ensureProfileForUser(data.user);
+  const profile = await ensureProfileForUser(data.user, supabase);
   return { user: data.user, profile, supabase, configMissing: false };
 }
 
@@ -322,7 +357,7 @@ let seededAdminPromise = null;
  * a conta administrativa exista e esteja aprovada no primeiro uso.
  */
 export async function ensureConfiguredAdminSeeded(targetEmail = '') {
-  if (!isSupabaseConfigured()) return null;
+  if (!isSupabaseConfigured() || !isServiceRoleConfigured()) return null;
 
   const adminEmail = getPrimaryAdminEmail();
   const adminPassword = process.env.ADMIN_PASSWORD?.trim() || '';

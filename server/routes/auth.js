@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { randomBytes } from 'node:crypto';
 import {
   createSupabaseUserClient,
   ensureConfiguredAdminSeeded,
@@ -6,11 +7,11 @@ import {
   getAppUrl,
   getAuthContext,
   getMissingEnvVars,
-  getSupabaseAdmin,
   isConfiguredAdminEmail,
   isSupabaseConfigured,
   isValidEmail,
   normalizeEmail,
+  tryGetSupabaseAdmin,
   upsertAdminAccount,
 } from '../supabase.js';
 
@@ -30,21 +31,23 @@ function ensureConfigMiddleware(req, res, next) {
 router.use(ensureConfigMiddleware);
 
 async function sendMagicLinkForApprovedEmail(req, res, email) {
-  const admin = getSupabaseAdmin();
+  const admin = tryGetSupabaseAdmin();
   const supabase = createSupabaseUserClient(req, res);
   const appUrl = getAppUrl(req);
 
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('id, status')
-    .eq('email', email)
-    .maybeSingle();
-
-  if (profile) {
-    await admin
+  if (admin) {
+    const { data: profile } = await admin
       .from('profiles')
-      .update({ last_magic_link_sent_at: new Date().toISOString() })
-      .eq('id', profile.id);
+      .select('id, status')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (profile) {
+      await admin
+        .from('profiles')
+        .update({ last_magic_link_sent_at: new Date().toISOString() })
+        .eq('id', profile.id);
+    }
   }
 
   const { error } = await supabase.auth.signInWithOtp({
@@ -120,7 +123,39 @@ router.post('/signup', async (req, res) => {
         .json({ error: 'A senha deve ter pelo menos 6 caracteres.' });
     }
 
-    const admin = getSupabaseAdmin();
+    const admin = tryGetSupabaseAdmin();
+
+    if (!admin) {
+      const supabase = createSupabaseUserClient(req, res);
+      const { data: signedUp, error: signUpErr } = await supabase.auth.signUp({
+        email,
+        password: password || randomBytes(18).toString('base64url'),
+        options: {
+          data: { nome, whatsapp },
+        },
+      });
+
+      if (signUpErr) {
+        if (/already|registered|exists/i.test(signUpErr.message)) {
+          return res.status(409).json({
+            error: 'Este e-mail já está cadastrado. Tente entrar na sua conta.',
+          });
+        }
+        return res.status(400).json({ error: 'Não foi possível concluir o cadastro.' });
+      }
+
+      if (Array.isArray(signedUp?.user?.identities) && signedUp.user.identities.length === 0) {
+        return res.status(409).json({
+          error: 'Este e-mail já está cadastrado. Tente entrar na sua conta.',
+        });
+      }
+
+      return res.status(201).json({
+        status: 'pending',
+        role: 'user',
+        message: 'Cadastro recebido! Sua conta está aguardando aprovação do administrador.',
+      });
+    }
 
     const { data: existingProfile } = await admin
       .from('profiles')
@@ -203,7 +238,18 @@ router.post('/magic-link', async (req, res) => {
       return res.status(400).json({ error: 'Informe um e-mail válido.' });
     }
 
-    const admin = getSupabaseAdmin();
+    const admin = tryGetSupabaseAdmin();
+    if (!admin) {
+      const result = await sendMagicLinkForApprovedEmail(req, res, email);
+      if (!result.ok) {
+        return res.status(result.status).json({ error: result.error });
+      }
+      return res.json({
+        message:
+          'Se a conta existir e estiver aprovada, você receberá um link de acesso (válido por 15 minutos e uso único).',
+      });
+    }
+
     let { data: profile } = await admin
       .from('profiles')
       .select('id, email, role, status')
@@ -259,7 +305,13 @@ router.post('/first-access', async (req, res) => {
       return res.status(400).json({ error: 'Informe o e-mail usado na compra.' });
     }
 
-    const admin = getSupabaseAdmin();
+    const admin = tryGetSupabaseAdmin();
+    if (!admin) {
+      return res.status(503).json({
+        error:
+          'Configure a chave SUPABASE_SERVICE_ROLE_KEY no servidor para validar o primeiro acesso de compradores.',
+      });
+    }
 
     const { data: profile } = await admin
       .from('profiles')
@@ -377,19 +429,21 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Preencha e-mail e senha.' });
     }
 
-    const admin = getSupabaseAdmin();
-    if (isConfiguredAdminEmail(email)) {
-      await ensureConfiguredAdminSeeded(email);
-    }
+    const admin = tryGetSupabaseAdmin();
+    if (admin) {
+      if (isConfiguredAdminEmail(email)) {
+        await ensureConfiguredAdminSeeded(email);
+      }
 
-    const { data: preProfile } = await admin
-      .from('profiles')
-      .select('id, status')
-      .eq('email', email)
-      .maybeSingle();
+      const { data: preProfile } = await admin
+        .from('profiles')
+        .select('id, status')
+        .eq('email', email)
+        .maybeSingle();
 
-    if (preProfile && preProfile.status !== 'approved' && !isConfiguredAdminEmail(email)) {
-      return res.status(403).json({ error: PENDING_OR_BLOCKED_MSG });
+      if (preProfile && preProfile.status !== 'approved' && !isConfiguredAdminEmail(email)) {
+        return res.status(403).json({ error: PENDING_OR_BLOCKED_MSG });
+      }
     }
 
     const supabase = createSupabaseUserClient(req, res);
@@ -401,6 +455,7 @@ router.post('/login', async (req, res) => {
     // Se o e-mail já existir no Auth (ex.: login anterior via Google) sem senha definida,
     // sincroniza a senha configurada em ADMIN_PASSWORD quando o usuário digitar essa mesma senha.
     if (
+      admin &&
       (error || !data?.user) &&
       isConfiguredAdminEmail(email) &&
       process.env.ADMIN_PASSWORD?.trim() &&
@@ -419,22 +474,30 @@ router.post('/login', async (req, res) => {
     }
 
     if (error || !data?.user) {
+      if (/not confirmed/i.test(error?.message || '')) {
+        return res.status(403).json({
+          error:
+            'E-mail ainda não confirmado. Verifique sua caixa de entrada ou contate o administrador.',
+        });
+      }
       return res.status(401).json({ error: 'E-mail ou senha inválidos.' });
     }
 
-    const profile = await ensureProfileForUser(data.user);
+    const profile = await ensureProfileForUser(data.user, supabase);
     if (profile.status !== 'approved') {
       await supabase.auth.signOut();
       return res.status(403).json({ error: PENDING_OR_BLOCKED_MSG });
     }
 
-    await admin
-      .from('profiles')
-      .update({
-        last_login_at: new Date().toISOString(),
-        last_magic_link_sent_at: null,
-      })
-      .eq('id', data.user.id);
+    if (admin) {
+      await admin
+        .from('profiles')
+        .update({
+          last_login_at: new Date().toISOString(),
+          last_magic_link_sent_at: null,
+        })
+        .eq('id', data.user.id);
+    }
 
     return res.json({ redirectTo: '/' });
   } catch (err) {
@@ -467,8 +530,8 @@ router.post('/session', async (req, res) => {
         .json({ error: 'Link inválido ou expirado. Solicite um novo link.' });
     }
 
-    const profile = await ensureProfileForUser(data.user);
-    const admin = getSupabaseAdmin();
+    const profile = await ensureProfileForUser(data.user, supabase);
+    const admin = tryGetSupabaseAdmin();
 
     // Verifica janela máxima de 15 minutos do link mágico
     if (profile.last_magic_link_sent_at) {
@@ -487,13 +550,15 @@ router.post('/session', async (req, res) => {
       return res.json({ redirectTo: '/auth/pending' });
     }
 
-    await admin
-      .from('profiles')
-      .update({
-        last_login_at: new Date().toISOString(),
-        last_magic_link_sent_at: null,
-      })
-      .eq('id', data.user.id);
+    if (admin) {
+      await admin
+        .from('profiles')
+        .update({
+          last_login_at: new Date().toISOString(),
+          last_magic_link_sent_at: null,
+        })
+        .eq('id', data.user.id);
+    }
 
     return res.json({ redirectTo: '/' });
   } catch (err) {

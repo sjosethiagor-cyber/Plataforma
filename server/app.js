@@ -12,8 +12,8 @@ import {
   createSupabaseUserClient,
   ensureProfileForUser,
   getAuthContext,
-  getSupabaseAdmin,
   isSupabaseConfigured,
+  tryGetSupabaseAdmin,
 } from './supabase.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -110,8 +110,8 @@ export async function createApp({ isVercel = false } = {}) {
           return res.redirect('/auth/callback?status=expired');
         }
 
-        const profile = await ensureProfileForUser(authResult.data.user);
-        const admin = getSupabaseAdmin();
+        const profile = await ensureProfileForUser(authResult.data.user, supabase);
+        const admin = tryGetSupabaseAdmin();
 
         // Garantia adicional de validade máxima de 15 minutos
         if (profile.last_magic_link_sent_at) {
@@ -127,13 +127,15 @@ export async function createApp({ isVercel = false } = {}) {
           return res.redirect('/auth/pending');
         }
 
-        await admin
-          .from('profiles')
-          .update({
-            last_login_at: new Date().toISOString(),
-            last_magic_link_sent_at: null,
-          })
-          .eq('id', authResult.data.user.id);
+        if (admin) {
+          await admin
+            .from('profiles')
+            .update({
+              last_login_at: new Date().toISOString(),
+              last_magic_link_sent_at: null,
+            })
+            .eq('id', authResult.data.user.id);
+        }
 
         return res.redirect('/');
       }

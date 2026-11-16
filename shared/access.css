@@ -52,6 +52,15 @@ html {
   color-scheme: dark;
 }
 
+[hidden] {
+  display: none !important;
+}
+
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
 body {
   background-color: var(--bg-main);
   color: var(--text-main);

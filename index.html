@@ -76,9 +76,19 @@
             </button>
           </div>
 
+          <!-- Abinha de Modo de Anexo: Peça Única vs Juntar Vários Arquivos -->
+          <div class="upload-mode-bar" role="tablist" aria-label="Modo de importação de arquivos">
+            <button type="button" role="tab" id="tab-upload-single" class="upload-mode-tab active" data-upload-mode="single" aria-selected="true">
+              📄 Arquivo único
+            </button>
+            <button type="button" role="tab" id="tab-upload-multi" class="upload-mode-tab" data-upload-mode="multi" aria-selected="false">
+              🧩 Juntar vários arquivos <span class="upload-mode-tag">Bambu</span>
+            </button>
+          </div>
+
           <!-- G-Code & 3MF Drag & Drop Zone -->
           <div class="gcode-dropzone" id="gcode-dropzone">
-            <input type="file" id="gcode-file-input" accept=".gcode,.3mf,.gcode.3mf,.stl" style="display: none;">
+            <input type="file" id="gcode-file-input" accept=".gcode,.3mf,.gcode.3mf,.stl" multiple style="display: none;">
             <div class="dropzone-glow"></div>
             <div class="dropzone-inner">
               <div class="dropzone-icon">
@@ -90,10 +100,10 @@
               </div>
               <div class="dropzone-text-group">
                 <div class="dropzone-title">
-                  <strong>Arraste seu arquivo fatiado (.gcode ou .3mf)</strong>
+                  <strong id="dropzone-title-text">Arraste seu arquivo fatiado (.gcode ou .3mf)</strong>
                   <span class="dropzone-badge">Bambu · Orca · Cura · Prusa</span>
                 </div>
-                <p class="dropzone-sub">
+                <p class="dropzone-sub" id="dropzone-sub-text">
                   Preenche peso e tempo automaticamente do fatiador, ou digite abaixo:
                 </p>
               </div>
@@ -106,6 +116,21 @@
               <span id="dropzone-status-text">Arquivo importado com sucesso!</span>
             </div>
             <div id="dropzone-tip" class="dropzone-tip-box" style="display: none;"></div>
+          </div>
+
+          <!-- Lista de Partes Anexadas (Modo Juntar Vários Arquivos) -->
+          <div id="multi-files-panel" class="multi-files-panel" style="display: none;">
+            <div class="multi-files-header">
+              <div class="multi-files-summary">
+                <span class="multi-files-count" id="multi-files-count">0 arquivos</span>
+                <span class="multi-files-totals" id="multi-files-totals">0g · 0h 0m</span>
+              </div>
+              <div class="multi-files-actions">
+                <button type="button" id="btn-add-more-files" class="btn-ghost multi-btn-add">+ Adicionar mais</button>
+                <button type="button" id="btn-clear-files" class="btn-ghost multi-btn-clear">Limpar lista</button>
+              </div>
+            </div>
+            <div id="multi-files-list" class="multi-files-list"></div>
           </div>
 
           <!-- Campos Diretos e Limpos da Peça -->

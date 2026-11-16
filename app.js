@@ -95,13 +95,22 @@ const elements = {
   taxPercentInput: document.getElementById('tax-percent-input'),
 
   // G-Code & 3MF Dropzone
+  uploadModeTabs: document.querySelectorAll('.upload-mode-tab'),
   gcodeDropzone: document.getElementById('gcode-dropzone'),
   gcodeFileInput: document.getElementById('gcode-file-input'),
   btnBrowseGcode: document.getElementById('btn-browse-gcode'),
+  dropzoneTitleText: document.getElementById('dropzone-title-text'),
+  dropzoneSubText: document.getElementById('dropzone-sub-text'),
   dropzoneStatus: document.getElementById('dropzone-status'),
   dropzoneStatusIcon: document.getElementById('dropzone-status-icon'),
   dropzoneStatusText: document.getElementById('dropzone-status-text'),
   dropzoneTip: document.getElementById('dropzone-tip'),
+  multiFilesPanel: document.getElementById('multi-files-panel'),
+  multiFilesCount: document.getElementById('multi-files-count'),
+  multiFilesTotals: document.getElementById('multi-files-totals'),
+  multiFilesList: document.getElementById('multi-files-list'),
+  btnAddMoreFiles: document.getElementById('btn-add-more-files'),
+  btnClearFiles: document.getElementById('btn-clear-files'),
 
   // Formação de Kits / Lote
   batchQtyInput: document.getElementById('batch-qty-input'),
@@ -1060,125 +1069,350 @@ function setMarketplace(key) {
   updateCalculations();
 }
 
-// Manipulação do Arquivo G-Code / 3MF
-async function handleGCodeFile(file) {
-  try {
-    showToast(`Analisando "${file.name}"...`, '⏳');
-    const meta = await GCodeParser.parseFile(file);
+// Estado de importação de arquivos (.gcode / .3mf) — peça única ou múltiplas partes
+let uploadMode = 'single';
+let attachedFiles = [];
+let lastAutoProductName = '';
 
-    if (meta.success) {
-      if (meta.cleanName && meta.cleanName !== 'Peça Impressa 3D') {
-        if (elements.productNameInput) elements.productNameInput.value = meta.cleanName;
-        state.productName = meta.cleanName;
+function escapeHtmlText(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatMinutesCompact(totalMinutes) {
+  const safeMin = Math.max(0, Math.round(Number(totalMinutes) || 0));
+  const h = Math.floor(safeMin / 60);
+  const m = safeMin % 60;
+  return `${h}h ${m}m`;
+}
+
+function setUploadMode(mode) {
+  uploadMode = mode === 'multi' ? 'multi' : 'single';
+
+  if (elements.uploadModeTabs) {
+    elements.uploadModeTabs.forEach((tab) => {
+      const isActive = tab.getAttribute('data-upload-mode') === uploadMode;
+      tab.classList.toggle('active', isActive);
+      tab.setAttribute('aria-selected', String(isActive));
+    });
+  }
+
+  if (elements.dropzoneTitleText) {
+    elements.dropzoneTitleText.textContent =
+      uploadMode === 'multi'
+        ? 'Anexe vários arquivos da Bambu (.gcode ou .3mf)'
+        : 'Arraste seu arquivo fatiado (.gcode ou .3mf)';
+  }
+
+  if (elements.dropzoneSubText) {
+    elements.dropzoneSubText.textContent =
+      uploadMode === 'multi'
+        ? 'Selecione vários de uma vez ou adicione parte por parte para somar peso e tempo:'
+        : 'Preenche peso e tempo automaticamente do fatiador, ou digite abaixo:';
+  }
+
+  if (elements.btnBrowseGcode) {
+    elements.btnBrowseGcode.textContent =
+      uploadMode === 'multi' ? '+ Selecionar arquivos' : 'Selecionar';
+  }
+
+  if (elements.multiFilesPanel) {
+    elements.multiFilesPanel.style.display =
+      uploadMode === 'multi' && attachedFiles.length > 0 ? 'block' : 'none';
+  }
+}
+
+function applyDetectedMachineAndFilament(meta) {
+  if (meta.filamentType) {
+    if (elements.filamentSelect) elements.filamentSelect.value = meta.filamentType;
+    const prof = FILAMENT_PROFILES.find((f) => f.id === meta.filamentType);
+    if (prof && elements.filamentPriceInput) {
+      elements.filamentPriceInput.value = prof.defaultPrice.toFixed(2);
+      state.filamentPriceKg = prof.defaultPrice;
+    }
+    state.filamentType = meta.filamentType;
+  }
+
+  if (meta.printerModel) {
+    const lower = meta.printerModel.toLowerCase();
+    let matchId = null;
+    if (lower.includes('a1 mini')) matchId = 'bambu-a1-mini';
+    else if (lower.includes('a1')) matchId = 'bambu-a1';
+    else if (lower.includes('p1p')) matchId = 'bambu-p1p';
+    else if (lower.includes('p1s')) matchId = 'bambu-p1s';
+    else if (lower.includes('x1')) matchId = 'bambu-x1c';
+    else if (lower.includes('k1')) matchId = 'creality-k1';
+    else if (lower.includes('ender')) matchId = 'creality-ender3';
+    else if (lower.includes('neptune')) matchId = 'neptune-4';
+    if (matchId && elements.printerSelect) {
+      elements.printerSelect.value = matchId;
+      const prof = PRINTER_PROFILES.find((p) => p.id === matchId);
+      if (prof) {
+        state.printerId = matchId;
+        state.printerWatts = prof.watts;
+        if (elements.printerWattsInput) elements.printerWattsInput.value = prof.watts;
       }
-      if (meta.hours > 0 || meta.minutes > 0) {
-        if (elements.hoursInput) elements.hoursInput.value = meta.hours;
-        if (elements.minutesInput) elements.minutesInput.value = meta.minutes;
-        state.printHours = meta.hours;
-        state.printMinutes = meta.minutes;
+    }
+  }
+}
+
+function renderAttachedFilesList() {
+  if (!elements.multiFilesPanel || !elements.multiFilesList) return;
+
+  if (uploadMode !== 'multi' || attachedFiles.length === 0) {
+    elements.multiFilesPanel.style.display = 'none';
+    elements.multiFilesList.innerHTML = '';
+    return;
+  }
+
+  elements.multiFilesPanel.style.display = 'block';
+
+  const totalWeight = attachedFiles.reduce((acc, f) => acc + (f.weightGrams || 0), 0);
+  const totalMin = attachedFiles.reduce((acc, f) => acc + (f.totalMinutes || 0), 0);
+
+  if (elements.multiFilesCount) {
+    elements.multiFilesCount.textContent =
+      attachedFiles.length === 1 ? '1 arquivo' : `${attachedFiles.length} arquivos`;
+  }
+  if (elements.multiFilesTotals) {
+    elements.multiFilesTotals.textContent = `Total: ${totalWeight.toFixed(1).replace(/\.0$/, '')}g · ${formatMinutesCompact(totalMin)}`;
+  }
+
+  elements.multiFilesList.innerHTML = attachedFiles
+    .map((item) => {
+      const displayName = escapeHtmlText(item.cleanName || item.fileName);
+      const rawName = escapeHtmlText(item.fileName);
+      const slicerLabel = escapeHtmlText(item.slicer || 'Fatiador');
+      const weightLabel = `${Number(item.weightGrams || 0).toFixed(1).replace(/\.0$/, '')}g`;
+      const timeLabel = formatMinutesCompact(item.totalMinutes);
+      return `
+        <div class="multi-file-row">
+          <div class="multi-file-info">
+            <div class="multi-file-name" title="${rawName}">${displayName}</div>
+            <div class="multi-file-meta">${rawName} · ${slicerLabel}</div>
+          </div>
+          <div class="multi-file-metrics">
+            <span>${weightLabel} · ${timeLabel}</span>
+            <button type="button" class="multi-file-remove" data-remove-uid="${escapeHtmlText(item.uid)}" title="Remover parte">✕</button>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+
+  elements.multiFilesList.querySelectorAll('[data-remove-uid]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const uid = btn.getAttribute('data-remove-uid');
+      removeAttachedFile(uid);
+    });
+  });
+}
+
+function recalculateFromAttachedFiles() {
+  if (attachedFiles.length === 0) {
+    state.fileUploaded = false;
+    state.weightGrams = 0;
+    state.printHours = 0;
+    state.printMinutes = 0;
+    if (elements.weightInput) elements.weightInput.value = '';
+    if (elements.hoursInput) elements.hoursInput.value = '';
+    if (elements.minutesInput) elements.minutesInput.value = '';
+    if (elements.productNameInput && elements.productNameInput.value === lastAutoProductName) {
+      elements.productNameInput.value = '';
+      state.productName = '';
+      lastAutoProductName = '';
+    }
+    if (elements.dropzoneStatus) elements.dropzoneStatus.style.display = 'none';
+    if (elements.dropzoneTip) elements.dropzoneTip.style.display = 'none';
+    renderAttachedFilesList();
+    updateCalculations();
+    return;
+  }
+
+  const totalWeight = Math.round(
+    attachedFiles.reduce((acc, f) => acc + (Number(f.weightGrams) || 0), 0) * 100
+  ) / 100;
+  const totalMinutes = Math.round(
+    attachedFiles.reduce((acc, f) => acc + (Number(f.totalMinutes) || 0), 0)
+  );
+  const totalHours = Math.floor(totalMinutes / 60);
+  const remMinutes = totalMinutes % 60;
+
+  state.weightGrams = totalWeight;
+  state.printHours = totalHours;
+  state.printMinutes = remMinutes;
+  state.fileUploaded = true;
+
+  if (elements.weightInput) elements.weightInput.value = totalWeight;
+  if (elements.hoursInput) elements.hoursInput.value = totalHours;
+  if (elements.minutesInput) elements.minutesInput.value = remMinutes;
+
+  const firstNamed = attachedFiles.find((f) => f.cleanName && f.cleanName !== 'Peça Impressa 3D');
+  const suggestedName = firstNamed
+    ? attachedFiles.length > 1
+      ? `${firstNamed.cleanName} (+${attachedFiles.length - 1} ${attachedFiles.length === 2 ? 'parte' : 'partes'})`
+      : firstNamed.cleanName
+    : '';
+
+  if (
+    suggestedName &&
+    elements.productNameInput &&
+    (!elements.productNameInput.value.trim() || elements.productNameInput.value === lastAutoProductName)
+  ) {
+    elements.productNameInput.value = suggestedName;
+    state.productName = suggestedName;
+    lastAutoProductName = suggestedName;
+  }
+
+  const lastMeta = attachedFiles[attachedFiles.length - 1];
+  applyDetectedMachineAndFilament(lastMeta);
+
+  const hasModelOnly = attachedFiles.some((f) => f.isModelOnly);
+  if (elements.dropzoneStatus) {
+    elements.dropzoneStatus.style.display = 'flex';
+    if (attachedFiles.length > 1) {
+      if (elements.dropzoneStatusIcon) elements.dropzoneStatusIcon.textContent = hasModelOnly ? '💡' : '✓';
+      if (elements.dropzoneStatusText) {
+        elements.dropzoneStatusText.textContent = `${attachedFiles.length} arquivos somados: ${totalHours}h ${remMinutes}m · ${totalWeight.toFixed(1).replace(/\.0$/, '')}g total`;
       }
-      if (meta.weightGrams > 0) {
-        if (elements.weightInput) elements.weightInput.value = meta.weightGrams;
-        state.weightGrams = meta.weightGrams;
-      }
-      if (meta.filamentType) {
-        if (elements.filamentSelect) elements.filamentSelect.value = meta.filamentType;
-        const prof = FILAMENT_PROFILES.find(f => f.id === meta.filamentType);
-        if (prof && elements.filamentPriceInput) {
-          elements.filamentPriceInput.value = prof.defaultPrice.toFixed(2);
-          state.filamentPriceKg = prof.defaultPrice;
+      elements.dropzoneStatus.style.borderColor = 'var(--accent-green-border)';
+      elements.dropzoneStatus.style.background = 'rgba(0, 229, 160, 0.12)';
+      elements.dropzoneStatus.style.color = 'var(--accent-green)';
+      if (elements.dropzoneTip) {
+        elements.dropzoneTip.style.display = hasModelOnly ? 'block' : 'none';
+        if (hasModelOnly) {
+          elements.dropzoneTip.innerHTML =
+            '<strong>ℹ️ Dica Bambu Studio:</strong> Algum arquivo .3mf não estava fatiado (valores estimados). Para peso e tempo exatos, exporte como <code>.gcode.3mf</code>.';
         }
-        state.filamentType = meta.filamentType;
       }
-
-      // Auto-seleciona impressora se detectada no arquivo de projeto
-      if (meta.printerModel) {
-        const lower = meta.printerModel.toLowerCase();
-        let matchId = null;
-        if (lower.includes('a1 mini')) matchId = 'bambu-a1-mini';
-        else if (lower.includes('a1')) matchId = 'bambu-a1';
-        else if (lower.includes('p1p')) matchId = 'bambu-p1p';
-        else if (lower.includes('p1s')) matchId = 'bambu-p1s';
-        else if (lower.includes('x1')) matchId = 'bambu-x1c';
-        else if (lower.includes('k1')) matchId = 'creality-k1';
-        else if (lower.includes('ender')) matchId = 'creality-ender3';
-        else if (lower.includes('neptune')) matchId = 'neptune-4';
-        if (matchId && elements.printerSelect) {
-          elements.printerSelect.value = matchId;
-          const prof = PRINTER_PROFILES.find(p => p.id === matchId);
-          if (prof) {
-            state.printerId = matchId;
-            state.printerWatts = prof.watts;
-            if (elements.printerWattsInput) elements.printerWattsInput.value = prof.watts;
-          }
-        }
+    } else if (hasModelOnly) {
+      if (elements.dropzoneStatusIcon) elements.dropzoneStatusIcon.textContent = '💡';
+      if (elements.dropzoneStatusText) {
+        elements.dropzoneStatusText.textContent = `Projeto 3D: "${lastMeta.cleanName}" (${lastMeta.dimensions || ''}) · Estimativa: ~${lastMeta.weightGrams}g · ~${lastMeta.rawTimeStr}`;
       }
-
-      if (elements.dropzoneStatus) {
-        elements.dropzoneStatus.style.display = 'flex';
-        if (meta.isModelOnly) {
-          if (elements.dropzoneStatusIcon) elements.dropzoneStatusIcon.textContent = '💡';
-          if (elements.dropzoneStatusText) {
-            elements.dropzoneStatusText.textContent = `Projeto 3D: "${meta.cleanName}" (${meta.dimensions || ''}) · Estimativa: ~${meta.weightGrams}g · ~${meta.rawTimeStr}`;
-          }
-          elements.dropzoneStatus.style.borderColor = 'rgba(56, 189, 248, 0.4)';
-          elements.dropzoneStatus.style.background = 'rgba(56, 189, 248, 0.12)';
-          elements.dropzoneStatus.style.color = 'var(--accent-blue)';
-
-          if (elements.dropzoneTip) {
-            elements.dropzoneTip.style.display = 'block';
-            elements.dropzoneTip.innerHTML = `
-              <strong>ℹ️ Projeto 3D (.3MF) Detectado:</strong> Contém o modelo 3D com estimativa de ~${meta.weightGrams}g e ~${meta.rawTimeStr}.<br>
-              ⚡ Para peso e tempo 100% exatos do Bambu Studio: clique na setinha ▾ ao lado de "Imprimir" e escolha "Exportar arquivo fatiado de mesa" (.gcode.3mf).
-            `;
-          }
-        } else {
-          if (elements.dropzoneStatusIcon) elements.dropzoneStatusIcon.textContent = '✓';
-          if (elements.dropzoneStatusText) {
-            elements.dropzoneStatusText.textContent = `${meta.slicer}: ${meta.rawTimeStr || (meta.hours + 'h ' + meta.minutes + 'm')} · ${meta.weightGrams}g ${meta.filamentType ? '· ' + meta.filamentType.toUpperCase() : ''}`;
-          }
-          elements.dropzoneStatus.style.borderColor = 'var(--accent-green-border)';
-          elements.dropzoneStatus.style.background = 'rgba(0, 229, 160, 0.12)';
-          elements.dropzoneStatus.style.color = 'var(--accent-green)';
-
-          if (elements.dropzoneTip) {
-            elements.dropzoneTip.style.display = 'none';
-          }
-        }
-      }
-
-      state.fileUploaded = true;
-
-      // Se estiver em modo de preço e estiver 0, sugere o Preço Ideal
-      if (state.calcMode === 'price') {
-        const currentPriceVal = parseFloat(elements.salePriceInput?.value) || 0;
-        if (currentPriceVal === 0) {
-          const smartRecs = engine.computeSmartRecommendations(state, state.quantity, state.batchPackagingType);
-          if (smartRecs.idealPrice && smartRecs.idealPrice.price > 0) {
-            if (elements.salePriceInput) elements.salePriceInput.value = smartRecs.idealPrice.price.toFixed(2);
-            state.salePrice = smartRecs.idealPrice.price;
-          }
-        }
-      }
-
-      updateCalculations();
-      
-      if (meta.isModelOnly) {
-        showToast(`Projeto 3D importado! Estimativas de ~${meta.weightGrams}g aplicadas.`, '💡');
-      } else {
-        showToast(`Arquivo fatiado importado com sucesso!`, '⚡');
+      elements.dropzoneStatus.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+      elements.dropzoneStatus.style.background = 'rgba(56, 189, 248, 0.12)';
+      elements.dropzoneStatus.style.color = 'var(--accent-blue)';
+      if (elements.dropzoneTip) {
+        elements.dropzoneTip.style.display = 'block';
+        elements.dropzoneTip.innerHTML = `
+          <strong>ℹ️ Projeto 3D (.3MF) Detectado:</strong> Contém o modelo 3D com estimativa de ~${lastMeta.weightGrams}g e ~${lastMeta.rawTimeStr}.<br>
+          ⚡ Para peso e tempo 100% exatos do Bambu Studio: clique na setinha ▾ ao lado de "Imprimir" e escolha "Exportar arquivo fatiado de mesa" (.gcode.3mf).
+        `;
       }
     } else {
-      showToast('Tempo ou peso não detectados. O arquivo precisa conter comentários de fatiador.', '⚠️');
+      if (elements.dropzoneStatusIcon) elements.dropzoneStatusIcon.textContent = '✓';
+      if (elements.dropzoneStatusText) {
+        elements.dropzoneStatusText.textContent = `${lastMeta.slicer}: ${lastMeta.rawTimeStr || `${totalHours}h ${remMinutes}m`} · ${lastMeta.weightGrams}g ${lastMeta.filamentType ? '· ' + lastMeta.filamentType.toUpperCase() : ''}`;
+      }
+      elements.dropzoneStatus.style.borderColor = 'var(--accent-green-border)';
+      elements.dropzoneStatus.style.background = 'rgba(0, 229, 160, 0.12)';
+      elements.dropzoneStatus.style.color = 'var(--accent-green)';
+      if (elements.dropzoneTip) elements.dropzoneTip.style.display = 'none';
+    }
+  }
+
+  // Se estiver em modo de preço e estiver 0, sugere o Preço Ideal
+  if (state.calcMode === 'price') {
+    const currentPriceVal = parseFloat(elements.salePriceInput?.value) || 0;
+    if (currentPriceVal === 0) {
+      const smartRecs = engine.computeSmartRecommendations(state, state.quantity, state.batchPackagingType);
+      if (smartRecs.idealPrice && smartRecs.idealPrice.price > 0) {
+        if (elements.salePriceInput) elements.salePriceInput.value = smartRecs.idealPrice.price.toFixed(2);
+        state.salePrice = smartRecs.idealPrice.price;
+      }
+    }
+  }
+
+  renderAttachedFilesList();
+  updateCalculations();
+}
+
+function removeAttachedFile(uid) {
+  attachedFiles = attachedFiles.filter((f) => f.uid !== uid);
+  recalculateFromAttachedFiles();
+  showToast('Arquivo removido da soma.', '🗑️');
+}
+
+function clearAttachedFiles() {
+  attachedFiles = [];
+  if (elements.gcodeFileInput) elements.gcodeFileInput.value = '';
+  recalculateFromAttachedFiles();
+}
+
+// Manipulação de um ou múltiplos arquivos G-Code / 3MF
+async function handleGCodeFiles(fileList) {
+  const files = Array.from(fileList || []).filter(Boolean);
+  if (!files.length) return;
+
+  if (files.length > 1 && uploadMode !== 'multi') {
+    setUploadMode('multi');
+  }
+
+  try {
+    showToast(
+      files.length > 1
+        ? `Analisando ${files.length} arquivos...`
+        : `Analisando "${files[0].name}"...`,
+      '⏳'
+    );
+
+    const parsedItems = [];
+    for (const file of files) {
+      const meta = await GCodeParser.parseFile(file);
+      if (meta && meta.success) {
+        const totalMinutes = Number.isFinite(meta.totalMinutes)
+          ? meta.totalMinutes
+          : (Number(meta.hours) || 0) * 60 + (Number(meta.minutes) || 0);
+        parsedItems.push({
+          ...meta,
+          totalMinutes,
+          weightGrams: Number(meta.weightGrams) || 0,
+          uid: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        });
+      }
+    }
+
+    if (parsedItems.length === 0) {
+      showToast('Tempo ou peso não detectados. O arquivo precisa conter dados do fatiador.', '⚠️');
+      return;
+    }
+
+    if (uploadMode === 'multi') {
+      attachedFiles = [...attachedFiles, ...parsedItems];
+    } else {
+      attachedFiles = [parsedItems[0]];
+    }
+
+    recalculateFromAttachedFiles();
+
+    if (uploadMode === 'multi') {
+      showToast(
+        `${attachedFiles.length} arquivo(s) somado(s) no cálculo!`,
+        '🧩'
+      );
+    } else if (parsedItems[0].isModelOnly) {
+      showToast(`Projeto 3D importado! Estimativas de ~${parsedItems[0].weightGrams}g aplicadas.`, '💡');
+    } else {
+      showToast('Arquivo fatiado importado com sucesso!', '⚡');
     }
   } catch (err) {
     console.error('Erro ao ler arquivo fatiado:', err);
     showToast('Erro ao ler arquivo.', '❌');
+  } finally {
+    if (elements.gcodeFileInput) elements.gcodeFileInput.value = '';
   }
 }
 
 // Zera a ferramenta e limpa todos os dados para uma nova peça
 function resetCalculation() {
+  attachedFiles = [];
+  lastAutoProductName = '';
+  renderAttachedFilesList();
   state.fileUploaded = false;
   state.productName = '';
   state.salePrice = 0;
@@ -1647,6 +1881,36 @@ function setupEventListeners() {
     });
   });
 
+  // Abas de modo de anexo (Peça única vs Juntar vários arquivos)
+  if (elements.uploadModeTabs) {
+    elements.uploadModeTabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const nextMode = tab.getAttribute('data-upload-mode');
+        setUploadMode(nextMode);
+        if (nextMode === 'single' && attachedFiles.length > 1) {
+          attachedFiles = [attachedFiles[attachedFiles.length - 1]];
+          recalculateFromAttachedFiles();
+        } else {
+          renderAttachedFilesList();
+        }
+      });
+    });
+  }
+
+  if (elements.btnAddMoreFiles && elements.gcodeFileInput) {
+    elements.btnAddMoreFiles.addEventListener('click', () => {
+      setUploadMode('multi');
+      elements.gcodeFileInput.click();
+    });
+  }
+
+  if (elements.btnClearFiles) {
+    elements.btnClearFiles.addEventListener('click', () => {
+      clearAttachedFiles();
+      showToast('Lista de arquivos limpa.', '🗑️');
+    });
+  }
+
   // G-Code & 3MF Drag & Drop
   if (elements.gcodeDropzone && elements.gcodeFileInput) {
     const dropzone = elements.gcodeDropzone;
@@ -1685,13 +1949,13 @@ function setupEventListeners() {
       const dt = e.dataTransfer;
       const files = dt?.files;
       if (files && files.length > 0) {
-        await handleGCodeFile(files[0]);
+        await handleGCodeFiles(files);
       }
     });
 
     fileInput.addEventListener('change', async (e) => {
       if (e.target.files && e.target.files.length > 0) {
-        await handleGCodeFile(e.target.files[0]);
+        await handleGCodeFiles(e.target.files);
       }
     });
   }

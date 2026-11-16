@@ -1,19 +1,24 @@
 import { Router } from 'express';
 import {
+  createSupabaseUserClient,
   ensureProfileForUser,
   getAppUrl,
   getAuthContext,
-  getSupabaseAdmin,
   isValidEmail,
   normalizeEmail,
   sendApprovalEmailIfConfigured,
+  tryGetSupabaseAdmin,
 } from '../supabase.js';
 
 const router = Router();
 
+function getAdminDbClient(req, res) {
+  return tryGetSupabaseAdmin() || createSupabaseUserClient(req, res);
+}
+
 async function requireAdmin(req, res, next) {
   try {
-    const { user, profile, configMissing } = await getAuthContext(req, res);
+    const { user, profile, supabase, configMissing } = await getAuthContext(req, res);
     if (configMissing) {
       return res.status(503).json({ error: 'Supabase não configurado no servidor.' });
     }
@@ -24,6 +29,7 @@ async function requireAdmin(req, res, next) {
       return res.status(403).json({ error: 'Acesso restrito a administradores.' });
     }
     req.adminProfile = profile;
+    req.userSupabase = supabase;
     return next();
   } catch (err) {
     console.error('Erro na verificação de admin:', err);
@@ -38,8 +44,8 @@ router.use(requireAdmin);
  */
 router.get('/users', async (req, res) => {
   try {
-    const admin = getSupabaseAdmin();
-    const { data, error } = await admin
+    const db = getAdminDbClient(req, res);
+    const { data, error } = await db
       .from('profiles')
       .select('id, nome, email, whatsapp, role, status, created_at, last_login_at')
       .order('created_at', { ascending: false });
@@ -88,7 +94,13 @@ router.post('/users', async (req, res) => {
         .json({ error: 'A senha deve ter pelo menos 6 caracteres.' });
     }
 
-    const admin = getSupabaseAdmin();
+    const admin = tryGetSupabaseAdmin();
+    if (!admin) {
+      return res.status(503).json({
+        error:
+          'Para criar usuários manualmente pelo painel, configure SUPABASE_SERVICE_ROLE_KEY na Vercel (ou peça para o usuário criar conta em /auth/signup e aprove por aqui).',
+      });
+    }
     const { data: existing } = await admin
       .from('profiles')
       .select('id')
@@ -150,8 +162,8 @@ router.post('/users', async (req, res) => {
  */
 router.post('/users/approve-all', async (req, res) => {
   try {
-    const admin = getSupabaseAdmin();
-    const { data: pendingUsers, error: fetchErr } = await admin
+    const db = getAdminDbClient(req, res);
+    const { data: pendingUsers, error: fetchErr } = await db
       .from('profiles')
       .select('id, nome, email')
       .eq('status', 'pending');
@@ -161,7 +173,7 @@ router.post('/users/approve-all', async (req, res) => {
       return res.json({ count: 0, message: 'Não há usuários pendentes.' });
     }
 
-    const { error: updateErr } = await admin
+    const { error: updateErr } = await db
       .from('profiles')
       .update({ status: 'approved' })
       .eq('status', 'pending');
@@ -201,8 +213,8 @@ router.patch('/users/:id/status', async (req, res) => {
       });
     }
 
-    const admin = getSupabaseAdmin();
-    const { data: existing, error: findErr } = await admin
+    const db = getAdminDbClient(req, res);
+    const { data: existing, error: findErr } = await db
       .from('profiles')
       .select('id, status')
       .eq('id', id)
@@ -213,7 +225,7 @@ router.patch('/users/:id/status', async (req, res) => {
       return res.status(404).json({ error: 'Usuário não encontrado.' });
     }
 
-    const { data: updated, error: updateErr } = await admin
+    const { data: updated, error: updateErr } = await db
       .from('profiles')
       .update({ status })
       .eq('id', id)
@@ -245,13 +257,17 @@ router.delete('/users/:id', async (req, res) => {
       });
     }
 
-    const admin = getSupabaseAdmin();
-    const { error: authErr } = await admin.auth.admin.deleteUser(id);
-    if (authErr && !/not found/i.test(authErr.message)) {
-      throw authErr;
+    const admin = tryGetSupabaseAdmin();
+    if (admin) {
+      const { error: authErr } = await admin.auth.admin.deleteUser(id);
+      if (authErr && !/not found/i.test(authErr.message)) {
+        throw authErr;
+      }
     }
 
-    await admin.from('profiles').delete().eq('id', id);
+    const db = getAdminDbClient(req, res);
+    const { error: profileDeleteErr } = await db.from('profiles').delete().eq('id', id);
+    if (profileDeleteErr) throw profileDeleteErr;
 
     return res.json({ ok: true, message: 'Usuário excluído com sucesso.' });
   } catch (err) {
@@ -263,10 +279,10 @@ router.delete('/users/:id', async (req, res) => {
 /**
  * GET /api/admin/buyers — Lista e-mails da base de compradores (primeiro acesso).
  */
-router.get('/buyers', async (_req, res) => {
+router.get('/buyers', async (req, res) => {
   try {
-    const admin = getSupabaseAdmin();
-    const { data, error } = await admin
+    const db = getAdminDbClient(req, res);
+    const { data, error } = await db
       .from('buyers')
       .select('id, email, nome, whatsapp, source, redeemed_at, created_at')
       .order('created_at', { ascending: false })
@@ -302,14 +318,14 @@ router.post('/buyers', async (req, res) => {
         .json({ error: 'Informe pelo menos um e-mail válido de comprador.' });
     }
 
-    const admin = getSupabaseAdmin();
+    const db = getAdminDbClient(req, res);
     const rows = validEmails.map((email) => ({
       email,
       ...(validEmails.length === 1 && nome ? { nome } : {}),
       source,
     }));
 
-    const { error } = await admin
+    const { error } = await db
       .from('buyers')
       .upsert(rows, { onConflict: 'email', ignoreDuplicates: true });
 
@@ -330,8 +346,8 @@ router.post('/buyers', async (req, res) => {
  */
 router.delete('/buyers/:id', async (req, res) => {
   try {
-    const admin = getSupabaseAdmin();
-    const { error } = await admin.from('buyers').delete().eq('id', req.params.id);
+    const db = getAdminDbClient(req, res);
+    const { error } = await db.from('buyers').delete().eq('id', req.params.id);
     if (error) throw error;
     return res.json({ ok: true });
   } catch (err) {
